@@ -51,7 +51,9 @@ if prompt := st.chat_input("Napíš správu Alexovi..."):
 
         try:
             # Inicializácia modelu Gemini
-            model = genai.GenerativeModel(
+            model = genai.GenerativeModel(model_name="gemini-2.0-flash",
+    system_instruction=ROLY[vybrana_rola]
+)
                 model_name="gemini-1.5-flash-latest",
                 system_instruction=ROLY[vybrana_rola]
             )
