@@ -35,8 +35,8 @@ with st.sidebar:
     vybrana_rola = st.selectbox("Rola Alexa:", list(ROLY.keys()))
     vybrany_model = st.selectbox(
         "Model AI:",
-        ["gemini-2.0-flash", "gemini-1.5-pro"],
-        help="2.0 Flash je rýchly, 1.5 Pro je určený na zložitejšie logické úlohy."
+        ["gemini-3.6-flash", "gemini-1.5-pro"],
+        help="3.6 Flash je najnovší a najrýchlejší model."
     )
     povolit_web = st.checkbox("🌐 Vyhľadávať na internete", value=False)
     
