@@ -2,22 +2,60 @@ import streamlit as st
 import google.generativeai as genai
 from PIL import Image
 
-# Nastavenie stránky
+# 1. Nastavenie stránky
 st.set_page_config(
-    page_title="Polaris – AI Asistentka",
+    page_title="Polaris",
     page_icon="✦",
     layout="centered",
     initial_sidebar_state="expanded"
 )
 
-# Načítanie API kľúča
+# 2. Vlastné CSS pre moderný vzhľad
+st.markdown("""
+    <style>
+    /* Hlavné pozadie a písmo */
+    .stApp {
+        background-color: #0e1117;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    
+    /* Úprava bočného panela */
+    [data-testid="stSidebar"] {
+        background-color: #161b22;
+        border-right: 1px solid #30363d;
+    }
+    
+    /* Úprava správ chatu */
+    [data-testid="stChatMessage"] {
+        background-color: #161b22;
+        border: 1px solid #30363d;
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 0.8rem;
+    }
+    
+    /* Vstupné pole (Chat Input) */
+    [data-testid="stChatInput"] {
+        border-radius: 20px;
+        border: 1px solid #30363d;
+    }
+    
+    /* Nadpis a podnadpis */
+    h1 {
+        font-weight: 600;
+        letter-spacing: -0.5px;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# 3. Načítanie API kľúča
 if "GOOGLE_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 else:
     st.error("Chýba GOOGLE_API_KEY v Secrets!")
     st.stop()
 
-# Definícia rolí v ženskom rode
+# 4. Definícia rolí v ženskom rode
 ROLY = {
     "Osobná asistentka": "Voláš sa Polaris. Si moja osobná AI asistentka. Hovoríš výlučne po slovensky a vyjadruješ sa striktne v ženskom rode (napr. 'som pripravená', 'myslela som', 'skontrolovala som'). Si priateľská, inteligentná a nápomocná.",
     "Programátorka": "Voláš sa Polaris. Si expertka na programovanie, Python, web a technológie. Vyjadruješ sa v ženskom rode a odpovedáš presne s prehľadným kódom a vysvetleniami po slovensky.",
@@ -26,9 +64,9 @@ ROLY = {
 }
 
 st.title("✦ Polaris")
-st.caption("Tvoja osobná AI asistentka • online na webe")
+st.caption("Tvoja osobná AI asistentka")
 
-# Bočný panel s nastaveniami
+# 5. Bočný panel
 with st.sidebar:
     st.header("⚙️ Nastavenia")
     
@@ -36,13 +74,13 @@ with st.sidebar:
     vybrany_model = st.selectbox(
         "Model AI:",
         ["gemini-3.6-flash", "gemini-1.5-pro"],
-        help="gemini-3.6-flash je najrýchlejší dostupný model."
+        help="gemini-3.6-flash je rýchly a najnovší model."
     )
     povolit_web = st.checkbox("🌐 Vyhľadávať na internete", value=False)
     
     st.divider()
     
-    st.subheader("📎 Priložiť súbor / obrázok")
+    st.subheader("📎 Súbor / Obrázok")
     nahraty_subor = st.file_uploader(
         "Prilož súbor pre Polaris:",
         type=["png", "jpg", "jpeg", "pdf", "txt"],
@@ -60,22 +98,23 @@ with st.sidebar:
         st.session_state.messages = []
         st.rerun()
 
-# Inicializácia histórie
+# 6. Inicializácia histórie
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Zobrazenie histórie
+# 7. Zobrazenie histórie konverzácie
 for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
+    avatar = "✦" if msg["role"] == "assistant" else None
+    with st.chat_message(msg["role"], avatar=avatar):
         st.markdown(msg["content"])
 
-# Vstup od používateľa
-if prompt := st.chat_input("Napíš správu Polaris..."):
+# 8. Spracovanie vstupu od používateľa
+if prompt := st.chat_input("Ako ti môžem dnes pomôcť?"):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    with st.chat_message("assistant"):
+    with st.chat_message("assistant", avatar="✦"):
         message_placeholder = st.empty()
 
         try:
@@ -87,7 +126,6 @@ if prompt := st.chat_input("Napíš správu Polaris..."):
                 tools=tools
             )
 
-            # Príprava obsahov pre model
             obsah_spravy = [prompt]
 
             if nahraty_subor is not None:
@@ -98,7 +136,6 @@ if prompt := st.chat_input("Napíš správu Polaris..."):
                     text_suboru = nahraty_subor.read().decode("utf-8")
                     obsah_spravy.append(f"\n\nObsah priloženého textového súboru:\n{text_suboru}")
 
-            # Príprava histórie konverzácie
             gemini_history = []
             for m in st.session_state.messages[:-1]:
                 role = "user" if m["role"] == "user" else "model"
@@ -106,7 +143,6 @@ if prompt := st.chat_input("Napíš správu Polaris..."):
 
             chat = model.start_chat(history=gemini_history)
             
-            # Zapnutie streamovania (stream=True)
             response = chat.send_message(obsah_spravy, stream=True)
             
             plny_text = ""
