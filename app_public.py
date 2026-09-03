@@ -14,7 +14,6 @@ st.set_page_config(
 # 2. Vesmírne CSS pozadie (Galaxia) a temný štýl
 st.markdown("""
     <style>
-    /* Pozadie galaxie s animovanými hviezdami a hmlovinou */
     .stApp {
         background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
         background-attachment: fixed;
@@ -22,7 +21,6 @@ st.markdown("""
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
     
-    /* Efekt hmloviny pre vesmírnu atmosféru */
     .stApp::before {
         content: "";
         position: fixed;
@@ -33,14 +31,12 @@ st.markdown("""
         z-index: 0;
     }
 
-    /* Bočný panel */
     [data-testid="stSidebar"] {
         background-color: rgba(15, 23, 42, 0.85) !important;
         backdrop-filter: blur(12px);
         border-right: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    /* Správy chatu */
     [data-testid="stChatMessage"] {
         background-color: rgba(22, 27, 34, 0.75) !important;
         backdrop-filter: blur(8px);
@@ -50,14 +46,12 @@ st.markdown("""
         margin-bottom: 0.8rem;
     }
 
-    /* Chat vstup */
     [data-testid="stChatInput"] {
         border-radius: 20px;
         border: 1px solid rgba(255, 255, 255, 0.2);
         background-color: rgba(15, 23, 42, 0.9) !important;
     }
 
-    /* Tlačidlá */
     .stButton>button {
         border-radius: 10px;
         border: 1px solid rgba(255, 255, 255, 0.15);
@@ -78,6 +72,21 @@ if "GOOGLE_API_KEY" in st.secrets:
 else:
     st.error("Chýba GOOGLE_API_KEY v Secrets!")
     st.stop()
+
+# Funkcia na dynamické získanie dostupných modelov bez rizika 404
+@st.cache_data(ttl=3600)
+def ziskaj_dostupne_modely():
+    try:
+        modely = []
+        for m in genai.list_models():
+            if 'generateContent' in m.supported_generation_methods:
+                modely.append(m.name)
+        # Zoradenie: uprednostníme Flash modely
+        flash_modely = [m for m in modely if "flash" in m]
+        ostatne_modely = [m for m in modely if "flash" not in m]
+        return flash_modely + ostatne_modely
+    except Exception:
+        return ["models/gemini-1.5-flash", "models/gemini-1.5-pro"]
 
 # 4. Štruktúra pre ukladanie chatov
 if "chats" not in st.session_state:
@@ -144,7 +153,6 @@ with st.sidebar:
 # 7. Zobrazenie správ na ploche
 aktualny_chat = st.session_state.chats[st.session_state.current_chat_id]
 
-# Natvrdo nastavený hlavný nadpis Polaris na ploche
 st.title("✨ Polaris")
 st.caption("Tvoja osobná AI asistentka")
 
@@ -155,7 +163,6 @@ for msg in aktualny_chat["messages"]:
 
 # 8. Spracovanie vstupu
 if prompt := st.chat_input("Ako ti môžem pomôcť?"):
-    # V histórii bočného panelu pomenujeme chat podľa otázky, ale nadpis na ploche zostáva Polaris
     if len(aktualny_chat["messages"]) == 0:
         aktualny_chat["title"] = prompt[:18] + "..." if len(prompt) > 18 else prompt
 
@@ -190,8 +197,8 @@ if prompt := st.chat_input("Ako ti môžem pomôcť?"):
             role = "user" if m["role"] == "user" else "model"
             gemini_history.append({"role": role, "parts": [m["content"]]})
 
-        # Uprednostňuje sa Gemini 3.6 Flash, so zálohou pre prípad limitov
-        dostupne_modely = ["gemini-3.6-flash", "gemini-2.0-flash", "gemini-pro"]
+        # Získa len aktívne a dostupné modely z vášho Google API účtu
+        dostupne_modely = ziskaj_dostupne_modely()
         
         posledna_chyba = ""
         uspesne = False
