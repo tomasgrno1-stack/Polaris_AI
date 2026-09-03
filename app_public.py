@@ -13,19 +13,14 @@ st.set_page_config(
 # 2. Vlastné CSS pre čistý tmavý vzhľad
 st.markdown("""
     <style>
-    /* Hlavné pozadie a písmo */
     .stApp {
         background-color: #0e1117;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
-    
-    /* Úprava bočného panela */
     [data-testid="stSidebar"] {
         background-color: #161b22;
         border-right: 1px solid #30363d;
     }
-    
-    /* Úprava správ chatu */
     [data-testid="stChatMessage"] {
         background-color: #161b22;
         border: 1px solid #30363d;
@@ -33,14 +28,10 @@ st.markdown("""
         padding: 1rem;
         margin-bottom: 0.8rem;
     }
-    
-    /* Vstupné pole (Chat Input) */
     [data-testid="stChatInput"] {
         border-radius: 20px;
         border: 1px solid #30363d;
     }
-    
-    /* Nadpis a podnadpis */
     h1 {
         font-weight: 600;
         letter-spacing: -0.5px;
@@ -120,7 +111,6 @@ if prompt := st.chat_input("Ako ti môžem dnes pomôcť?"):
         try:
             tools = ["google_search_retrieval"] if povolit_web else None
 
-            # Optimalizácia pre rýchlejšie odpovede
             generation_config = genai.types.GenerationConfig(
                 temperature=0.7,
                 top_p=0.8,
@@ -144,8 +134,11 @@ if prompt := st.chat_input("Ako ti môžem dnes pomôcť?"):
                     text_suboru = nahraty_subor.read().decode("utf-8")
                     obsah_spravy.append(f"\n\nObsah priloženého textového súboru:\n{text_suboru}")
 
+            # Orezanie histórie na posledných 6 správ pre úsporu kvóty
+            pouzita_historia = st.session_state.messages[:-1][-6:]
+            
             gemini_history = []
-            for m in st.session_state.messages[:-1]:
+            for m in pouzita_historia:
                 role = "user" if m["role"] == "user" else "model"
                 gemini_history.append({"role": role, "parts": [m["content"]]})
 
@@ -162,4 +155,7 @@ if prompt := st.chat_input("Ako ti môžem dnes pomôcť?"):
             st.session_state.messages.append({"role": "assistant", "content": plny_text})
 
         except Exception as e:
-            message_placeholder.error(f"Chyba pri generovaní odpovede: {str(e)}")
+            if "429" in str(e):
+                message_placeholder.error("Dosiahli ste limit požiadaviek za minútu. Počkajte približne 30-60 sekúnd a skúste to znovu.")
+            else:
+                message_placeholder.error(f"Chyba pri generovaní odpovede: {str(e)}")
