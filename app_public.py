@@ -10,40 +10,48 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. Vlastné CSS pre moderný vzhľad
+# 2. Vlastné CSS pre vesmírny / galaktický motív
 st.markdown("""
     <style>
-    /* Hlavné pozadie a písmo */
+    /* Hlavné pozadie s tématikou galaxie */
     .stApp {
-        background-color: #0e1117;
+        background: radial-gradient(circle at 50% 20%, #1e1b4b 0%, #0f172a 50%, #020617 100%) !important;
+        background-attachment: fixed !important;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
     
-    /* Úprava bočného panela */
+    /* Úprava bočného panela s jemnou priehľadnosťou */
     [data-testid="stSidebar"] {
-        background-color: #161b22;
-        border-right: 1px solid #30363d;
+        background-color: rgba(15, 23, 42, 0.85) !important;
+        backdrop-filter: blur(10px);
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
     }
     
-    /* Úprava správ chatu */
+    /* Úprava správ chatu s efektom skla (glassmorphism) */
     [data-testid="stChatMessage"] {
-        background-color: #161b22;
-        border: 1px solid #30363d;
-        border-radius: 12px;
+        background-color: rgba(30, 27, 75, 0.4) !important;
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(139, 92, 246, 0.2);
+        border-radius: 16px;
         padding: 1rem;
         margin-bottom: 0.8rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     }
     
     /* Vstupné pole (Chat Input) */
     [data-testid="stChatInput"] {
-        border-radius: 20px;
-        border: 1px solid #30363d;
+        border-radius: 24px;
+        border: 1px solid rgba(139, 92, 246, 0.3);
+        background-color: rgba(15, 23, 42, 0.8) !important;
     }
     
-    /* Nadpis a podnadpis */
+    /* Nadpis a texty */
     h1 {
         font-weight: 600;
         letter-spacing: -0.5px;
+        background: linear-gradient(135deg, #a78bfa 0%, #f472b6 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
     }
     </style>
 """, unsafe_allow_html=True)
