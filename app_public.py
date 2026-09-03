@@ -36,7 +36,7 @@ with st.sidebar:
     vybrany_model = st.selectbox(
         "Model AI:",
         ["gemini-3.6-flash", "gemini-1.5-pro"],
-        help="gemini-3.6-flash je rýchly a najnovší model."
+        help="gemini-3.6-flash je najrýchlejší dostupný model."
     )
     povolit_web = st.checkbox("🌐 Vyhľadávať na internete", value=False)
     
@@ -77,7 +77,6 @@ if prompt := st.chat_input("Napíš správu Polaris..."):
 
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
-        message_placeholder.markdown("*Polaris premýšľa...*")
 
         try:
             tools = ["google_search_retrieval"] if povolit_web else None
@@ -106,11 +105,17 @@ if prompt := st.chat_input("Napíš správu Polaris..."):
                 gemini_history.append({"role": role, "parts": [m["content"]]})
 
             chat = model.start_chat(history=gemini_history)
-            response = chat.send_message(obsah_spravy)
             
-            odpoved = response.text
-            message_placeholder.markdown(odpoved)
-            st.session_state.messages.append({"role": "assistant", "content": odpoved})
+            # Zapnutie streamovania (stream=True)
+            response = chat.send_message(obsah_spravy, stream=True)
+            
+            plny_text = ""
+            for chunk in response:
+                plny_text += chunk.text
+                message_placeholder.markdown(plny_text + "▌")
+            
+            message_placeholder.markdown(plny_text)
+            st.session_state.messages.append({"role": "assistant", "content": plny_text})
 
         except Exception as e:
             message_placeholder.error(f"Chyba pri generovaní odpovede: {str(e)}")
