@@ -1,7 +1,7 @@
 import streamlit as st
 import google.generativeai as genai
 from PIL import Image
-import time
+import uuid
 
 # 1. Nastavenie stránky
 st.set_page_config(
@@ -11,7 +11,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. Vlastné CSS pre čistý tmavý vzhľad
+# 2. Tmavé CSS
 st.markdown("""
     <style>
     .stApp {
@@ -33,10 +33,6 @@ st.markdown("""
         border-radius: 20px;
         border: 1px solid #30363d;
     }
-    h1 {
-        font-weight: 600;
-        letter-spacing: -0.5px;
-    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -47,7 +43,23 @@ else:
     st.error("Chýba GOOGLE_API_KEY v Secrets!")
     st.stop()
 
-# 4. Definícia rolí v ženskom rode
+# 4. Štrutkúra pre ukladanie viacerých chatov
+if "chats" not in st.session_state:
+    st.session_state.chats = {} # Ukladá konverzácie {chat_id: {"title": str, "messages": list}}
+
+if "current_chat_id" not in st.session_state:
+    # Vytvorenie prvého chatu
+    prve_id = str(uuid.uuid4())
+    st.session_state.chats[prve_id] = {"title": "Nový chat", "messages": []}
+    st.session_state.current_chat_id = prve_id
+
+# Helper funkcia pre vytvorenie nového chatu
+def vytvor_novy_chat():
+    nove_id = str(uuid.uuid4())
+    st.session_state.chats[nove_id] = {"title": "Nový chat", "messages": []}
+    st.session_state.current_chat_id = nove_id
+
+# 5. Definícia rolí
 ROLY = {
     "Osobná asistentka": "Voláš sa Polaris. Si moja osobná AI asistentka. Hovoríš výlučne po slovensky v ženskom rode. Odpovedaj stručne a k veci.",
     "Programátorka": "Voláš sa Polaris. Si expertka na Python a web. Odpovedaj stručne s prehľadným kódom po slovensky.",
@@ -55,41 +67,67 @@ ROLY = {
     "Stručná asistentka": "Voláš sa Polaris. Odpovedaj maximálne v 2-3 krátkych vetách po slovensky."
 }
 
-st.title("✨ Polaris")
-st.caption("Tvoja osobná AI asistentka")
-
-# 5. Bočný panel
+# 6. Bočný panel v štýle ChatGPT
 with st.sidebar:
+    st.title("✨ Polaris")
+    
+    # Tlačidlo pre nový chat
+    if st.button("➕ Nový chat", use_container_width=True):
+        vytvor_novy_chat()
+        st.rerun()
+
+    st.divider()
+    st.subheader("💬 História chatov")
+    
+    # Zoznam uložených chatov
+    for chat_id, chat_data in list(st.session_state.chats.items()):
+        # Označenie aktívneho chatu
+        is_active = (chat_id == st.session_state.current_chat_id)
+        label = f"📍 {chat_data['title']}" if is_active else chat_data['title']
+        
+        col1, col2 = st.columns([0.8, 0.2])
+        with col1:
+            if st.button(label, key=f"select_{chat_id}", use_container_width=True):
+                st.session_state.current_chat_id = chat_id
+                st.rerun()
+        with col2:
+            # Tlačidlo na zmazanie konkrétneho chatu
+            if st.button("🗑", key=f"del_{chat_id}"):
+                del st.session_state.chats[chat_id]
+                if st.session_state.current_chat_id == chat_id:
+                    if st.session_state.chats:
+                        st.session_state.current_chat_id = list(st.session_state.chats.keys())[0]
+                    else:
+                        vytvor_novy_chat()
+                st.rerun()
+
+    st.divider()
     st.header("⚙️ Nastavenia")
     vybrana_rola = st.selectbox("Rola Polaris:", list(ROLY.keys()))
     
-    st.divider()
-    
-    st.subheader("📎 Súbor / Obrázok")
     nahraty_subor = st.file_uploader(
         "Prilož súbor:",
         type=["png", "jpg", "jpeg", "txt"],
         help="Nahraj obrázok alebo textový súbor."
     )
 
-    st.divider()
-    if st.button("🗑 Vymazať históriu", use_container_width=True):
-        st.session_state.messages = []
-        st.rerun()
+# 7. Zobrazenie správ aktuálne zvoleného chatu
+aktualny_chat = st.session_state.chats[st.session_state.current_chat_id]
 
-# 6. Inicializácia histórie
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+st.title(aktualny_chat["title"])
 
-# 7. Zobrazenie histórie konverzácie
-for msg in st.session_state.messages:
+for msg in aktualny_chat["messages"]:
     avatar = "✨" if msg["role"] == "assistant" else None
     with st.chat_message(msg["role"], avatar=avatar):
         st.markdown(msg["content"])
 
-# 8. Spracovanie vstupu
+# 8. Odeslanie správy
 if prompt := st.chat_input("Ako ti môžem pomôcť?"):
-    st.session_state.messages.append({"role": "user", "content": prompt})
+    # Ak je to prvá správa v chate, premenuj názov chatu podľa textu
+    if len(aktualny_chat["messages"]) == 0:
+        aktualny_chat["title"] = prompt[:20] + "..." if len(prompt) > 20 else prompt
+
+    aktualny_chat["messages"].append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
@@ -113,17 +151,18 @@ if prompt := st.chat_input("Ako ti môžem pomôcť?"):
                 text_suboru = nahraty_subor.read().decode("utf-8")
                 obsah_spravy.append(f"\n\nText zo súboru:\n{text_suboru}")
 
-        pouzita_historia = st.session_state.messages[:-1][-4:]
+        pouzita_historia = aktualny_chat["messages"][:-1][-4:]
         
         gemini_history = []
         for m in pouzita_historia:
             role = "user" if m["role"] == "user" else "model"
             gemini_history.append({"role": role, "parts": [m["content"]]})
 
-        # Zoznam overených modelov pre prípad výpadku alebo 404/429 chyby
         dostupne_modely = ["gemini-2.0-flash", "gemini-pro"]
         
+        posledna_chyba = ""
         uspesne = False
+        
         for nazov_modelu in dostupne_modely:
             try:
                 model = genai.GenerativeModel(
@@ -141,12 +180,12 @@ if prompt := st.chat_input("Ako ti môžem pomôcť?"):
                     message_placeholder.markdown(plny_text + "▌")
                 
                 message_placeholder.markdown(plny_text)
-                st.session_state.messages.append({"role": "assistant", "content": plny_text})
+                aktualny_chat["messages"].append({"role": "assistant", "content": plny_text})
                 uspesne = True
                 break
             except Exception as e:
-                # Ak zlyhá jeden model, automaticky skúsi druhý
+                posledna_chyba = str(e)
                 continue
 
         if not uspesne:
-            message_placeholder.error("Siete sú momentálne preťažené alebo bol dosiahnutý limit. Počkajte 30 sekund a skúste znova.")
+            message_placeholder.error(f"Chyba: {posledna_chyba}")
