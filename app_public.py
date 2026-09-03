@@ -3,7 +3,12 @@ import google.generativeai as genai
 from PIL import Image
 
 # Nastavenie stránky
-st.set_page_config(page_title="Alex – AI Asistent", page_icon="✦", layout="centered")
+st.set_page_config(
+    page_title="Alex – AI Asistent",
+    page_icon="✦",
+    layout="centered",
+    initial_sidebar_state="expanded"
+)
 
 # Načítanie API kľúča
 if "GOOGLE_API_KEY" in st.secrets:
@@ -14,8 +19,8 @@ else:
 
 # Definícia rolí
 ROLY = {
-    "Osobný asistent": "Voláš sa Alex. Si môj osobný AI asistent. Vždy odpovedáš výlučne po slovensky. Si priateľský a nápomocný.",
-    "Programátor": "Voláš sa Alex. Si expert na programovanie, Python, web a technológie. Odpovedáš presne s vysvetleniami po slovensky.",
+    "Osobný asistent": "Voláš sa Alex. Si môj osobný AI asistent. Vždy odpovedáš výlučne po slovensky. Si priateľský, prirodzený a nápomocný.",
+    "Programátor": "Voláš sa Alex. Si expert na programovanie, Python, web a technológie. Odpovedáš presne s prehľadným kódom a vysvetleniami po slovensky.",
     "Učiteľ angličtiny": "Voláš sa Alex. Si trpezlivý učiteľ angličtiny. Na správy odpovedáš po anglicky a pod to pridáš slovenský preklad.",
     "Stručný asistent": "Voláš sa Alex. Tvoja odpoveď musí mať maximálne 2 až 3 vety po slovensky."
 }
@@ -25,24 +30,33 @@ st.caption("Tvoj osobný AI asistent • online na webe")
 
 # Bočný panel s nastaveniami
 with st.sidebar:
-    st.header("Nastavenia")
+    st.header("⚙️ Nastavenia")
     
     vybrana_rola = st.selectbox("Rola Alexa:", list(ROLY.keys()))
     vybrany_model = st.selectbox(
         "Model AI:",
         ["gemini-2.0-flash", "gemini-1.5-pro"],
-        help="2.0 Flash je rýchly, 1.5 Pro je určený na zložitejšie úlohy."
+        help="2.0 Flash je rýchly, 1.5 Pro je určený na zložitejšie logické úlohy."
     )
     povolit_web = st.checkbox("🌐 Vyhľadávať na internete", value=False)
     
     st.divider()
     
-    # Pridanie tlačidla na nahrávanie súborov
-    st.subheader("📎 Súbor / Obrázok")
-    nahraty_subor = st.file_uploader("Prilož súbor pre Alexa:", type=["png", "jpg", "jpeg", "pdf", "txt"])
+    st.subheader("📎 Priložiť súbor / obrázok")
+    nahraty_subor = st.file_uploader(
+        "Prilož súbor pre Alexa:",
+        type=["png", "jpg", "jpeg", "pdf", "txt"],
+        help="Nahraj obrázok na analýzu alebo textový súbor/PDF na zhrnutie."
+    )
     
+    if nahraty_subor:
+        if nahraty_subor.type in ["image/png", "image/jpeg", "image/jpg"]:
+            st.image(nahraty_subor, caption="Náhľad obrázka", use_container_width=True)
+        else:
+            st.success(f"Priložený súbor: {nahraty_subor.name}")
+
     st.divider()
-    if st.button("🗑 Vymazať históriu"):
+    if st.button("🗑 Vymazať históriu", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
 
@@ -77,7 +91,6 @@ if prompt := st.chat_input("Napíš správu Alexovi..."):
             # Príprava obsahov pre model
             obsah_spravy = [prompt]
 
-            # Ak je nahrnutý súbor, spracujeme ho
             if nahraty_subor is not None:
                 if nahraty_subor.type in ["image/png", "image/jpeg", "image/jpg"]:
                     img = Image.open(nahraty_subor)
@@ -86,7 +99,7 @@ if prompt := st.chat_input("Napíš správu Alexovi..."):
                     text_suboru = nahraty_subor.read().decode("utf-8")
                     obsah_spravy.append(f"\n\nObsah priloženého textového súboru:\n{text_suboru}")
 
-            # Príprava histórie
+            # Príprava histórie konverzácie
             gemini_history = []
             for m in st.session_state.messages[:-1]:
                 role = "user" if m["role"] == "user" else "model"
