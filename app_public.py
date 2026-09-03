@@ -11,27 +11,63 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. Tmavé CSS
+# 2. Vesmírne CSS pozadie (Galaxia) a temný štýl
 st.markdown("""
     <style>
+    /* Pozadie galaxie s animovanými hviezdami a hmlovinou */
     .stApp {
-        background-color: #0e1117;
+        background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
+        background-attachment: fixed;
+        color: #e6edf3;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
-    [data-testid="stSidebar"] {
-        background-color: #161b22;
-        border-right: 1px solid #30363d;
+    
+    /* Efekt hmloviny pre vesmírnu atmosféru */
+    .stApp::before {
+        content: "";
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: radial-gradient(circle at 50% 30%, rgba(76, 29, 149, 0.25) 0%, rgba(15, 23, 42, 0) 70%),
+                    radial-gradient(circle at 80% 80%, rgba(14, 165, 233, 0.15) 0%, rgba(15, 23, 42, 0) 50%);
+        pointer-events: none;
+        z-index: 0;
     }
+
+    /* Bočný panel */
+    [data-testid="stSidebar"] {
+        background-color: rgba(15, 23, 42, 0.85) !important;
+        backdrop-filter: blur(12px);
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* Správy chatu */
     [data-testid="stChatMessage"] {
-        background-color: #161b22;
-        border: 1px solid #30363d;
+        background-color: rgba(22, 27, 34, 0.75) !important;
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 12px;
         padding: 1rem;
         margin-bottom: 0.8rem;
     }
+
+    /* Chat vstup */
     [data-testid="stChatInput"] {
         border-radius: 20px;
-        border: 1px solid #30363d;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background-color: rgba(15, 23, 42, 0.9) !important;
+    }
+
+    /* Tlačidlá */
+    .stButton>button {
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        background-color: rgba(30, 41, 59, 0.7);
+        color: #f8fafc;
+        transition: all 0.2s ease;
+    }
+    .stButton>button:hover {
+        background-color: rgba(51, 65, 85, 0.9);
+        border-color: rgba(255, 255, 255, 0.3);
     }
     </style>
 """, unsafe_allow_html=True)
@@ -43,20 +79,18 @@ else:
     st.error("Chýba GOOGLE_API_KEY v Secrets!")
     st.stop()
 
-# 4. Štrutkúra pre ukladanie viacerých chatov
+# 4. Štruktúra pre ukladanie chatov
 if "chats" not in st.session_state:
-    st.session_state.chats = {} # Ukladá konverzácie {chat_id: {"title": str, "messages": list}}
+    st.session_state.chats = {}
 
 if "current_chat_id" not in st.session_state:
-    # Vytvorenie prvého chatu
     prve_id = str(uuid.uuid4())
-    st.session_state.chats[prve_id] = {"title": "Nový chat", "messages": []}
+    st.session_state.chats[prve_id] = {"title": "Polaris", "messages": []}
     st.session_state.current_chat_id = prve_id
 
-# Helper funkcia pre vytvorenie nového chatu
 def vytvor_novy_chat():
     nove_id = str(uuid.uuid4())
-    st.session_state.chats[nove_id] = {"title": "Nový chat", "messages": []}
+    st.session_state.chats[nove_id] = {"title": "Polaris", "messages": []}
     st.session_state.current_chat_id = nove_id
 
 # 5. Definícia rolí
@@ -67,11 +101,10 @@ ROLY = {
     "Stručná asistentka": "Voláš sa Polaris. Odpovedaj maximálne v 2-3 krátkych vetách po slovensky."
 }
 
-# 6. Bočný panel v štýle ChatGPT
+# 6. Bočný panel
 with st.sidebar:
     st.title("✨ Polaris")
     
-    # Tlačidlo pre nový chat
     if st.button("➕ Nový chat", use_container_width=True):
         vytvor_novy_chat()
         st.rerun()
@@ -79,9 +112,7 @@ with st.sidebar:
     st.divider()
     st.subheader("💬 História chatov")
     
-    # Zoznam uložených chatov
     for chat_id, chat_data in list(st.session_state.chats.items()):
-        # Označenie aktívneho chatu
         is_active = (chat_id == st.session_state.current_chat_id)
         label = f"📍 {chat_data['title']}" if is_active else chat_data['title']
         
@@ -91,7 +122,6 @@ with st.sidebar:
                 st.session_state.current_chat_id = chat_id
                 st.rerun()
         with col2:
-            # Tlačidlo na zmazanie konkrétneho chatu
             if st.button("🗑", key=f"del_{chat_id}"):
                 del st.session_state.chats[chat_id]
                 if st.session_state.current_chat_id == chat_id:
@@ -111,21 +141,23 @@ with st.sidebar:
         help="Nahraj obrázok alebo textový súbor."
     )
 
-# 7. Zobrazenie správ aktuálne zvoleného chatu
+# 7. Zobrazenie správ na ploche
 aktualny_chat = st.session_state.chats[st.session_state.current_chat_id]
 
-st.title(aktualny_chat["title"])
+# Natvrdo nastavený hlavný nadpis Polaris na ploche
+st.title("✨ Polaris")
+st.caption("Tvoja osobná AI asistentka")
 
 for msg in aktualny_chat["messages"]:
     avatar = "✨" if msg["role"] == "assistant" else None
     with st.chat_message(msg["role"], avatar=avatar):
         st.markdown(msg["content"])
 
-# 8. Odeslanie správy
+# 8. Spracovanie vstupu
 if prompt := st.chat_input("Ako ti môžem pomôcť?"):
-    # Ak je to prvá správa v chate, premenuj názov chatu podľa textu
+    # V histórii bočného panelu pomenujeme chat podľa otázky, ale nadpis na ploche zostáva Polaris
     if len(aktualny_chat["messages"]) == 0:
-        aktualny_chat["title"] = prompt[:20] + "..." if len(prompt) > 20 else prompt
+        aktualny_chat["title"] = prompt[:18] + "..." if len(prompt) > 18 else prompt
 
     aktualny_chat["messages"].append({"role": "user", "content": prompt})
     with st.chat_message("user"):
@@ -158,7 +190,8 @@ if prompt := st.chat_input("Ako ti môžem pomôcť?"):
             role = "user" if m["role"] == "user" else "model"
             gemini_history.append({"role": role, "parts": [m["content"]]})
 
-        dostupne_modely = ["gemini-2.0-flash", "gemini-pro"]
+        # Uprednostňuje sa Gemini 3.6 Flash, so zálohou pre prípad limitov
+        dostupne_modely = ["gemini-3.6-flash", "gemini-2.0-flash", "gemini-pro"]
         
         posledna_chyba = ""
         uspesne = False
