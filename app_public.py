@@ -11,7 +11,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. Vesmírne CSS pozadie a štýlovanie vstupu s pluskom
+# 2. CSS pozadie a zarovnanie spodnej lišty
 st.markdown("""
     <style>
     .stApp {
@@ -52,11 +52,27 @@ st.markdown("""
         background-color: rgba(15, 23, 42, 0.9) !important;
     }
 
-    /* Štýl pre okrúhle tlačidlo pluska vedľa vstupu */
+    /* Ukotvenie spodného panela úplne dole */
+    div[data-testid="stHorizontalBlock"]:has(.stPopover) {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100%;
+        max-width: 730px;
+        z-index: 100;
+        background-color: rgba(15, 23, 42, 0.95);
+        padding: 8px 12px;
+        border-radius: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        align-items: center;
+    }
+
+    /* Okrúhle tlačidlo pluska v lište */
     .stPopover>button {
         border-radius: 50% !important;
-        width: 45px !important;
-        height: 45px !important;
+        width: 42px !important;
+        height: 42px !important;
         padding: 0 !important;
         font-size: 20px !important;
         background-color: rgba(30, 41, 59, 0.8) !important;
@@ -82,6 +98,11 @@ st.markdown("""
         background-color: #161b22 !important;
         border: 1px solid rgba(255, 255, 255, 0.15);
         border-radius: 16px;
+    }
+
+    /* Odsadenie pre správy, aby ich nezakrývala spodná lišta */
+    .main .block-container {
+        padding-bottom: 120px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -176,20 +197,21 @@ for msg in aktualny_chat["messages"]:
     with st.chat_message(msg["role"], avatar=avatar):
         st.markdown(msg["content"])
 
-# 8. Vstupné pole s tlačidlom "+" po ľavej strane
-col_plus, col_input = st.columns([0.12, 0.88])
+# 8. Spodná ukotvená lišta (Plusko + Chat input v jednej línii)
+col_plus, col_input = st.columns([0.1, 0.9])
 
 with col_plus:
     with st.popover("➕"):
+        # Iba čisto ikony bez textových popiskov
         c1, c2, c3, c4 = st.columns(4)
         with c1:
-            st.caption("📎 Súbory")
+            st.write("📎")
         with c2:
-            st.caption("▲ Disk")
+            st.write("▲")
         with c3:
-            st.caption("🌸 Fotky")
+            st.write("🌸")
         with c4:
-            st.caption("📓 Notebook")
+            st.write("📓")
 
         nahraty_subor = st.file_uploader(
             "Nahrať zo zariadenia:",
