@@ -103,9 +103,9 @@ if prompt := st.chat_input("Ako ti môžem pomôcť?"):
             max_output_tokens=1000
         )
 
-        # Používame oficiálny plne podporovaný názov modelu
+        # Použitie oficiálne podporovaného rýchleho modelu bez 404 chyby
         model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash-latest",
+            model_name="gemini-1.5-flash-002",
             system_instruction=ROLY[vybrana_rola],
             generation_config=generation_config
         )
@@ -129,8 +129,7 @@ if prompt := st.chat_input("Ako ti môžem pomôcť?"):
 
         chat = model.start_chat(history=gemini_history)
         
-        uspesne = False
-        pauzy = [4, 10]
+        pauzy = [3, 8]
         for pokus, cakanie in enumerate(pauzy):
             try:
                 response = chat.send_message(obsah_spravy, stream=True)
@@ -142,11 +141,10 @@ if prompt := st.chat_input("Ako ti môžem pomôcť?"):
                 
                 message_placeholder.markdown(plny_text)
                 st.session_state.messages.append({"role": "assistant", "content": plny_text})
-                uspesne = True
                 break
             except Exception as e:
                 if "429" in str(e) and pokus < len(pauzy) - 1:
-                    message_placeholder.warning(f"Zasiahnutý limit, čakám {cakanie} sekúnd...")
+                    message_placeholder.warning(f"Siete sú vyťažené, čakám {cakanie} sekúnd...")
                     time.sleep(cakanie)
                 else:
                     message_placeholder.error(f"Chyba: {str(e)}")
