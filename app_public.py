@@ -1,6 +1,7 @@
 import streamlit as st
 import google.generativeai as genai
 from PIL import Image
+import time
 
 # 1. Nastavenie stránky
 st.set_page_config(
@@ -95,54 +96,57 @@ if prompt := st.chat_input("Ako ti môžem pomôcť?"):
     with st.chat_message("assistant", avatar="✨"):
         message_placeholder = st.empty()
 
-        try:
-            # Maximálna optimalizácia pre rýchlosť generovania
-            generation_config = genai.types.GenerationConfig(
-                temperature=0.5,
-                top_p=0.8,
-                top_k=20,
-                max_output_tokens=1000  # Zabraňuje generovaniu zbytočne dlhých slohov
-            )
+        generation_config = genai.types.GenerationConfig(
+            temperature=0.5,
+            top_p=0.8,
+            top_k=20,
+            max_output_tokens=1000
+        )
 
-            # Používame priamo rýchly model bez webových nástrojov
-            model = genai.GenerativeModel(
-                model_name="gemini-3.6-flash",
-                system_instruction=ROLY[vybrana_rola],
-                generation_config=generation_config
-            )
+        model = genai.GenerativeModel(
+            model_name="gemini-3.6-flash",
+            system_instruction=ROLY[vybrana_rola],
+            generation_config=generation_config
+        )
 
-            obsah_spravy = [prompt]
+        obsah_spravy = [prompt]
 
-            if nahraty_subor is not None:
-                if nahraty_subor.type in ["image/png", "image/jpeg", "image/jpg"]:
-                    img = Image.open(nahraty_subor)
-                    obsah_spravy.append(img)
-                elif nahraty_subor.type == "text/plain":
-                    text_suboru = nahraty_subor.read().decode("utf-8")
-                    obsah_spravy.append(f"\n\nText zo súboru:\n{text_suboru}")
+        if nahraty_subor is not None:
+            if nahraty_subor.type in ["image/png", "image/jpeg", "image/jpg"]:
+                img = Image.open(nahraty_subor)
+                obsah_spravy.append(img)
+            elif nahraty_subor.type == "text/plain":
+                text_suboru = nahraty_subor.read().decode("utf-8")
+                obsah_spravy.append(f"\n\nText zo súboru:\n{text_suboru}")
 
-            # Posielame iba posledné 4 správy na udržanie bleskovej odozvy
-            pouzita_historia = st.session_state.messages[:-1][-4:]
-            
-            gemini_history = []
-            for m in pouzita_historia:
-                role = "user" if m["role"] == "user" else "model"
-                gemini_history.append({"role": role, "parts": [m["content"]]})
+        pouzita_historia = st.session_state.messages[:-1][-4:]
+        
+        gemini_history = []
+        for m in pouzita_historia:
+            role = "user" if m["role"] == "user" else "model"
+            gemini_history.append({"role": role, "parts": [m["content"]]})
 
-            chat = model.start_chat(history=gemini_history)
-            
-            response = chat.send_message(obsah_spravy, stream=True)
-            
-            plny_text = ""
-            for chunk in response:
-                plny_text += chunk.text
-                message_placeholder.markdown(plny_text + "▌")
-            
-            message_placeholder.markdown(plny_text)
-            st.session_state.messages.append({"role": "assistant", "content": plny_text})
-
-        except Exception as e:
-            if "429" in str(e):
-                message_placeholder.error("Siete Google sú preťažené (Limit 429). Počkajte 20 sekúnd a stlačte Enter znovu.")
-            else:
-                message_placeholder.error(f"Chyba: {str(e)}")
+        chat = model.start_chat(history=gemini_history)
+        
+        # Automatický pokus o opakovanie pri prečerpaní limitu (3 pokusy)
+        uspesne = False
+        for pokus in range(3):
+            try:
+                response = chat.send_message(obsah_spravy, stream=True)
+                
+                plny_text = ""
+                for chunk in response:
+                    plny_text += chunk.text
+                    message_placeholder.markdown(plny_text + "▌")
+                
+                message_placeholder.markdown(plny_text)
+                st.session_state.messages.append({"role": "assistant", "content": plny_text})
+                uspesne = True
+                break
+            except Exception as e:
+                if "429" in str(e) and pokus < 2:
+                    message_placeholder.warning("Linka je plná, čakám 5 sekúnd a skúšam znova...")
+                    time.sleep(5)
+                else:
+                    message_placeholder.error(f"Chyba: {str(e)}")
+                    break
