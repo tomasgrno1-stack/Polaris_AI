@@ -4,7 +4,7 @@ from PIL import Image
 
 # Nastavenie stránky
 st.set_page_config(
-    page_title="Alex – AI Asistent",
+    page_title="Polaris – AI Asistentka",
     page_icon="✦",
     layout="centered",
     initial_sidebar_state="expanded"
@@ -17,26 +17,26 @@ else:
     st.error("Chýba GOOGLE_API_KEY v Secrets!")
     st.stop()
 
-# Definícia rolí
+# Definícia rolí v ženskom rode
 ROLY = {
-    "Osobný asistent": "Voláš sa Alex. Si môj osobný AI asistent. Vždy odpovedáš výlučne po slovensky. Si priateľský, prirodzený a nápomocný.",
-    "Programátor": "Voláš sa Alex. Si expert na programovanie, Python, web a technológie. Odpovedáš presne s prehľadným kódom a vysvetleniami po slovensky.",
-    "Učiteľ angličtiny": "Voláš sa Alex. Si trpezlivý učiteľ angličtiny. Na správy odpovedáš po anglicky a pod to pridáš slovenský preklad.",
-    "Stručný asistent": "Voláš sa Alex. Tvoja odpoveď musí mať maximálne 2 až 3 vety po slovensky."
+    "Osobná asistentka": "Voláš sa Polaris. Si moja osobná AI asistentka. Hovoríš výlučne po slovensky a vyjadruješ sa striktne v ženskom rode (napr. 'som pripravená', 'myslela som', 'skontrolovala som'). Si priateľská, inteligentná a nápomocná.",
+    "Programátorka": "Voláš sa Polaris. Si expertka na programovanie, Python, web a technológie. Vyjadruješ sa v ženskom rode a odpovedáš presne s prehľadným kódom a vysvetleniami po slovensky.",
+    "Učiteľka angličtiny": "Voláš sa Polaris. Si trpezlivá učiteľka angličtiny. Vyjadruješ sa v ženskom rode. Na správy odpovedáš po anglicky a pod to pridáš slovenský preklad.",
+    "Stručná asistentka": "Voláš sa Polaris. Vyjadruješ sa v ženskom rode. Tvoja odpoveď musí mať maximálne 2 až 3 vety po slovensky."
 }
 
-st.title("✦ Alex")
-st.caption("Tvoj osobný AI asistent • online na webe")
+st.title("✦ Polaris")
+st.caption("Tvoja osobná AI asistentka • online na webe")
 
 # Bočný panel s nastaveniami
 with st.sidebar:
     st.header("⚙️ Nastavenia")
     
-    vybrana_rola = st.selectbox("Rola Alexa:", list(ROLY.keys()))
+    vybrana_rola = st.selectbox("Rola Polaris:", list(ROLY.keys()))
     vybrany_model = st.selectbox(
         "Model AI:",
         ["gemini-3.6-flash", "gemini-1.5-pro"],
-        help="3.6 Flash je najnovší a najrýchlejší model."
+        help="gemini-3.6-flash je rýchly a najnovší model."
     )
     povolit_web = st.checkbox("🌐 Vyhľadávať na internete", value=False)
     
@@ -44,7 +44,7 @@ with st.sidebar:
     
     st.subheader("📎 Priložiť súbor / obrázok")
     nahraty_subor = st.file_uploader(
-        "Prilož súbor pre Alexa:",
+        "Prilož súbor pre Polaris:",
         type=["png", "jpg", "jpeg", "pdf", "txt"],
         help="Nahraj obrázok na analýzu alebo textový súbor/PDF na zhrnutie."
     )
@@ -70,14 +70,14 @@ for msg in st.session_state.messages:
         st.markdown(msg["content"])
 
 # Vstup od používateľa
-if prompt := st.chat_input("Napíš správu Alexovi..."):
+if prompt := st.chat_input("Napíš správu Polaris..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
-        message_placeholder.markdown("*Alex premýšľa...*")
+        message_placeholder.markdown("*Polaris premýšľa...*")
 
         try:
             tools = ["google_search_retrieval"] if povolit_web else None
