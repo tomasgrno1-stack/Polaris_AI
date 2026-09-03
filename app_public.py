@@ -11,7 +11,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. Vesmírne CSS pozadie (Galaxia) a temný štýl
+# 2. Vesmírne CSS pozadie (Galaxia) a temný štýl + animovaný spinner
 st.markdown("""
     <style>
     .stApp {
@@ -63,6 +63,12 @@ st.markdown("""
         background-color: rgba(51, 65, 85, 0.9);
         border-color: rgba(255, 255, 255, 0.3);
     }
+
+    /* Úprava farby načítavacej animácie do fialovo-modra */
+    div[data-baseweb="spinner"] {
+        border-top-color: #a855f7 !important;
+        border-left-color: #38bdf8 !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -73,7 +79,7 @@ else:
     st.error("Chýba GOOGLE_API_KEY v Secrets!")
     st.stop()
 
-# Funkcia na dynamické získanie dostupných modelov bez rizika 404
+# Funkcia na dynamické získanie dostupných modelov
 @st.cache_data(ttl=3600)
 def ziskaj_dostupne_modely():
     try:
@@ -81,7 +87,6 @@ def ziskaj_dostupne_modely():
         for m in genai.list_models():
             if 'generateContent' in m.supported_generation_methods:
                 modely.append(m.name)
-        # Zoradenie: uprednostníme Flash modely
         flash_modely = [m for m in modely if "flash" in m]
         ostatne_modely = [m for m in modely if "flash" not in m]
         return flash_modely + ostatne_modely
@@ -161,7 +166,7 @@ for msg in aktualny_chat["messages"]:
     with st.chat_message(msg["role"], avatar=avatar):
         st.markdown(msg["content"])
 
-# 8. Spracovanie vstupu
+# 8. Spracovanie vstupu s animáciou načítania
 if prompt := st.chat_input("Ako ti môžem pomôcť?"):
     if len(aktualny_chat["messages"]) == 0:
         aktualny_chat["title"] = prompt[:18] + "..." if len(prompt) > 18 else prompt
@@ -173,59 +178,60 @@ if prompt := st.chat_input("Ako ti môžem pomôcť?"):
     with st.chat_message("assistant", avatar="✨"):
         message_placeholder = st.empty()
 
-        generation_config = genai.types.GenerationConfig(
-            temperature=0.5,
-            top_p=0.8,
-            top_k=20,
-            max_output_tokens=1000
-        )
+        # Animácia načítania pri generovaní odpovede
+        with st.spinner("Polaris premýšľa..."):
+            generation_config = genai.types.GenerationConfig(
+                temperature=0.5,
+                top_p=0.8,
+                top_k=20,
+                max_output_tokens=1000
+            )
 
-        obsah_spravy = [prompt]
+            obsah_spravy = [prompt]
 
-        if nahraty_subor is not None:
-            if nahraty_subor.type in ["image/png", "image/jpeg", "image/jpg"]:
-                img = Image.open(nahraty_subor)
-                obsah_spravy.append(img)
-            elif nahraty_subor.type == "text/plain":
-                text_suboru = nahraty_subor.read().decode("utf-8")
-                obsah_spravy.append(f"\n\nText zo súboru:\n{text_suboru}")
+            if nahraty_subor is not None:
+                if nahraty_subor.type in ["image/png", "image/jpeg", "image/jpg"]:
+                    img = Image.open(nahraty_subor)
+                    obsah_spravy.append(img)
+                elif nahraty_subor.type == "text/plain":
+                    text_suboru = nahraty_subor.read().decode("utf-8")
+                    obsah_spravy.append(f"\n\nText zo súboru:\n{text_suboru}")
 
-        pouzita_historia = aktualny_chat["messages"][:-1][-4:]
-        
-        gemini_history = []
-        for m in pouzita_historia:
-            role = "user" if m["role"] == "user" else "model"
-            gemini_history.append({"role": role, "parts": [m["content"]]})
+            pouzita_historia = aktualny_chat["messages"][:-1][-4:]
+            
+            gemini_history = []
+            for m in pouzita_historia:
+                role = "user" if m["role"] == "user" else "model"
+                gemini_history.append({"role": role, "parts": [m["content"]]})
 
-        # Získa len aktívne a dostupné modely z vášho Google API účtu
-        dostupne_modely = ziskaj_dostupne_modely()
-        
-        posledna_chyba = ""
-        uspesne = False
-        
-        for nazov_modelu in dostupne_modely:
-            try:
-                model = genai.GenerativeModel(
-                    model_name=nazov_modelu,
-                    system_instruction=ROLY[vybrana_rola],
-                    generation_config=generation_config
-                )
-                
-                chat = model.start_chat(history=gemini_history)
-                response = chat.send_message(obsah_spravy, stream=True)
-                
-                plny_text = ""
-                for chunk in response:
-                    plny_text += chunk.text
-                    message_placeholder.markdown(plny_text + "▌")
-                
-                message_placeholder.markdown(plny_text)
-                aktualny_chat["messages"].append({"role": "assistant", "content": plny_text})
-                uspesne = True
-                break
-            except Exception as e:
-                posledna_chyba = str(e)
-                continue
+            dostupne_modely = ziskaj_dostupne_modely()
+            
+            posledna_chyba = ""
+            uspesne = False
+            
+            for nazov_modelu in dostupne_modely:
+                try:
+                    model = genai.GenerativeModel(
+                        model_name=nazov_modelu,
+                        system_instruction=ROLY[vybrana_rola],
+                        generation_config=generation_config
+                    )
+                    
+                    chat = model.start_chat(history=gemini_history)
+                    response = chat.send_message(obsah_spravy, stream=True)
+                    
+                    plny_text = ""
+                    for chunk in response:
+                        plny_text += chunk.text
+                        message_placeholder.markdown(plny_text + "▌")
+                    
+                    message_placeholder.markdown(plny_text)
+                    aktualny_chat["messages"].append({"role": "assistant", "content": plny_text})
+                    uspesne = True
+                    break
+                except Exception as e:
+                    posledna_chyba = str(e)
+                    continue
 
-        if not uspesne:
-            message_placeholder.error(f"Chyba: {posledna_chyba}")
+            if not uspesne:
+                message_placeholder.error(f"Chyba: {posledna_chyba}")
