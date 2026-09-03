@@ -1,5 +1,6 @@
 import streamlit as st
 import google.generativeai as genai
+from PIL import Image
 
 # Nastavenie stránky
 st.set_page_config(page_title="Alex – AI Asistent", page_icon="✦", layout="centered")
@@ -26,18 +27,19 @@ st.caption("Tvoj osobný AI asistent • online na webe")
 with st.sidebar:
     st.header("Nastavenia")
     
-    # 1. Výber roly
     vybrana_rola = st.selectbox("Rola Alexa:", list(ROLY.keys()))
-    
-    # 2. Výber modelu
     vybrany_model = st.selectbox(
         "Model AI:",
         ["gemini-2.0-flash", "gemini-1.5-pro"],
         help="2.0 Flash je rýchly, 1.5 Pro je určený na zložitejšie úlohy."
     )
-    
-    # 3. Zapnutie vyhľadávania na webe
     povolit_web = st.checkbox("🌐 Vyhľadávať na internete", value=False)
+    
+    st.divider()
+    
+    # Pridanie tlačidla na nahrávanie súborov
+    st.subheader("📎 Súbor / Obrázok")
+    nahraty_subor = st.file_uploader("Prilož súbor pre Alexa:", type=["png", "jpg", "jpeg", "pdf", "txt"])
     
     st.divider()
     if st.button("🗑 Vymazať históriu"):
@@ -48,7 +50,7 @@ with st.sidebar:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Zobrazenie histórie konverzácie
+# Zobrazenie histórie
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
@@ -64,15 +66,25 @@ if prompt := st.chat_input("Napíš správu Alexovi..."):
         message_placeholder.markdown("*Alex premýšľa...*")
 
         try:
-            # Nastavenie nástrojov (Google Search)
             tools = ["google_search_retrieval"] if povolit_web else None
 
-            # Inicializácia modelu podľa výberu v bočnom paneli
             model = genai.GenerativeModel(
                 model_name=vybrany_model,
                 system_instruction=ROLY[vybrana_rola],
                 tools=tools
             )
+
+            # Príprava obsahov pre model
+            obsah_spravy = [prompt]
+
+            # Ak je nahrnutý súbor, spracujeme ho
+            if nahraty_subor is not None:
+                if nahraty_subor.type in ["image/png", "image/jpeg", "image/jpg"]:
+                    img = Image.open(nahraty_subor)
+                    obsah_spravy.append(img)
+                elif nahraty_subor.type == "text/plain":
+                    text_suboru = nahraty_subor.read().decode("utf-8")
+                    obsah_spravy.append(f"\n\nObsah priloženého textového súboru:\n{text_suboru}")
 
             # Príprava histórie
             gemini_history = []
@@ -81,7 +93,7 @@ if prompt := st.chat_input("Napíš správu Alexovi..."):
                 gemini_history.append({"role": role, "parts": [m["content"]]})
 
             chat = model.start_chat(history=gemini_history)
-            response = chat.send_message(prompt)
+            response = chat.send_message(obsah_spravy)
             
             odpoved = response.text
             message_placeholder.markdown(odpoved)
