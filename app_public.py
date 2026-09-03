@@ -11,7 +11,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. Vesmírne CSS pozadie (Galaxia) a temný štýl + animovaný spinner
+# 2. Vesmírne CSS pozadie a štýlovanie Gemini menu
 st.markdown("""
     <style>
     .stApp {
@@ -64,10 +64,17 @@ st.markdown("""
         border-color: rgba(255, 255, 255, 0.3);
     }
 
-    /* Úprava farby načítavacej animácie do fialovo-modra */
+    /* Štýlovanie načítavacej animácie */
     div[data-baseweb="spinner"] {
         border-top-color: #a855f7 !important;
         border-left-color: #38bdf8 !important;
+    }
+
+    /* Dizajn ponuky tlačidiel v menu */
+    div[data-testid="stPopoverBody"] {
+        background-color: #161b22 !important;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 16px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -79,7 +86,6 @@ else:
     st.error("Chýba GOOGLE_API_KEY v Secrets!")
     st.stop()
 
-# Funkcia na dynamické získanie dostupných modelov
 @st.cache_data(ttl=3600)
 def ziskaj_dostupne_modely():
     try:
@@ -101,6 +107,9 @@ if "current_chat_id" not in st.session_state:
     prve_id = str(uuid.uuid4())
     st.session_state.chats[prve_id] = {"title": "Polaris", "messages": []}
     st.session_state.current_chat_id = prve_id
+
+if "aktivny_rezim" not in st.session_state:
+    st.session_state.aktivny_rezim = "Štandardný"
 
 def vytvor_novy_chat():
     nove_id = str(uuid.uuid4())
@@ -148,25 +157,49 @@ with st.sidebar:
     st.divider()
     st.header("⚙️ Nastavenia")
     vybrana_rola = st.selectbox("Rola Polaris:", list(ROLY.keys()))
-    
-    nahraty_subor = st.file_uploader(
-        "Prilož súbor:",
-        type=["png", "jpg", "jpeg", "txt"],
-        help="Nahraj obrázok alebo textový súbor."
-    )
 
 # 7. Zobrazenie správ na ploche
 aktualny_chat = st.session_state.chats[st.session_state.current_chat_id]
 
 st.title("✨ Polaris")
-st.caption("Tvoja osobná AI asistentka")
+st.caption(f"Tvoja osobná AI asistentka | Režim: {st.session_state.aktivny_rezim}")
 
 for msg in aktualny_chat["messages"]:
     avatar = "✨" if msg["role"] == "assistant" else None
     with st.chat_message(msg["role"], avatar=avatar):
         st.markdown(msg["content"])
 
-# 8. Spracovanie vstupu s animáciou načítania
+# 8. Rozširujúce menu nástrojov (podľa snímky)
+with st.popover("➕ Pridať nástroje a súbory", use_container_width=True):
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.caption("📎 Súbory")
+    with col2:
+        st.caption("▲ Disk")
+    with col3:
+        st.caption("🌸 Fotky")
+    with col4:
+        st.caption("📓 Notebook")
+
+    nahraty_subor = st.file_uploader(
+        "Nahrať zo zariadenia:",
+        type=["png", "jpg", "jpeg", "txt"],
+        label_visibility="collapsed"
+    )
+
+    st.divider()
+
+    if st.button("🖼 **Obrázky** — Vytvárajte a upravujte", use_container_width=True):
+        st.session_state.aktivny_rezim = "Obrázky"
+        st.rerun()
+    if st.button("🎵 **Hudba** — Vytvárajte zvukové stopy", use_container_width=True):
+        st.session_state.aktivny_rezim = "Hudba"
+        st.rerun()
+    if st.button("🖥 **Canvas** — Programujte, píšte alebo vytvárajte snímky", use_container_width=True):
+        st.session_state.aktivny_rezim = "Canvas"
+        st.rerun()
+
+# 9. Spracovanie vstupu s animáciou načítania
 if prompt := st.chat_input("Ako ti môžem pomôcť?"):
     if len(aktualny_chat["messages"]) == 0:
         aktualny_chat["title"] = prompt[:18] + "..." if len(prompt) > 18 else prompt
@@ -178,7 +211,6 @@ if prompt := st.chat_input("Ako ti môžem pomôcť?"):
     with st.chat_message("assistant", avatar="✨"):
         message_placeholder = st.empty()
 
-        # Animácia načítania pri generovaní odpovede
         with st.spinner("Polaris premýšľa..."):
             generation_config = genai.types.GenerationConfig(
                 temperature=0.5,
@@ -188,6 +220,14 @@ if prompt := st.chat_input("Ako ti môžem pomôcť?"):
             )
 
             obsah_spravy = [prompt]
+
+            # Prispôsobenie kontextu podľa zvoleného režimu z menu
+            if st.session_state.aktivny_rezim == "Obrázky":
+                obsah_spravy.append("\n[Používateľ zvolil režim vytvárania a úpravy obrázkov]")
+            elif st.session_state.aktivny_rezim == "Hudba":
+                obsah_spravy.append("\n[Používateľ zvolil režim vytvárania hudby a zvukov]")
+            elif st.session_state.aktivny_rezim == "Canvas":
+                obsah_spravy.append("\n[Používateľ zvolil režim Canvas na vývoj kódu a tvorbu snímok]")
 
             if nahraty_subor is not None:
                 if nahraty_subor.type in ["image/png", "image/jpeg", "image/jpg"]:
