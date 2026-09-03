@@ -52,7 +52,7 @@ st.markdown("""
         background-color: rgba(15, 23, 42, 0.9) !important;
     }
 
-    /* Ukotvenie spodného panela úplne dole */
+    /* Ukotvenie spodného panela dole */
     div[data-testid="stHorizontalBlock"]:has(.stPopover) {
         position: fixed;
         bottom: 20px;
@@ -68,7 +68,7 @@ st.markdown("""
         align-items: center;
     }
 
-    /* Okrúhle tlačidlo pluska v lište */
+    /* Tlačidlo pluska v lište */
     .stPopover>button {
         border-radius: 50% !important;
         width: 42px !important;
@@ -87,7 +87,7 @@ st.markdown("""
         transition: all 0.2s ease;
     }
 
-    /* Štýlovanie načítavacej animácie */
+    /* Načítavacia animácia */
     div[data-baseweb="spinner"] {
         border-top-color: #a855f7 !important;
         border-left-color: #38bdf8 !important;
@@ -100,7 +100,6 @@ st.markdown("""
         border-radius: 16px;
     }
 
-    /* Odsadenie pre správy, aby ich nezakrývala spodná lišta */
     .main .block-container {
         padding-bottom: 120px;
     }
@@ -197,26 +196,14 @@ for msg in aktualny_chat["messages"]:
     with st.chat_message(msg["role"], avatar=avatar):
         st.markdown(msg["content"])
 
-# 8. Spodná ukotvená lišta (Plusko + Chat input v jednej línii)
+# 8. Spodná lišta s tlačidlom "+"
 col_plus, col_input = st.columns([0.1, 0.9])
 
 with col_plus:
     with st.popover("➕"):
-        # Iba čisto ikony bez textových popiskov
-        c1, c2, c3, c4 = st.columns(4)
-        with c1:
-            st.write("📎")
-        with c2:
-            st.write("▲")
-        with c3:
-            st.write("🌸")
-        with c4:
-            st.write("📓")
-
         nahraty_subor = st.file_uploader(
-            "Nahrať zo zariadenia:",
-            type=["png", "jpg", "jpeg", "txt"],
-            label_visibility="collapsed"
+            "Priložiť súbor:",
+            type=["png", "jpg", "jpeg", "txt"]
         )
 
         st.divider()
