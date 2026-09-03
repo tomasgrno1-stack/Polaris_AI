@@ -103,13 +103,6 @@ if prompt := st.chat_input("Ako ti môžem pomôcť?"):
             max_output_tokens=1000
         )
 
-        # Použitie oficiálne podporovaného rýchleho modelu bez 404 chyby
-        model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash-002",
-            system_instruction=ROLY[vybrana_rola],
-            generation_config=generation_config
-        )
-
         obsah_spravy = [prompt]
 
         if nahraty_subor is not None:
@@ -127,11 +120,19 @@ if prompt := st.chat_input("Ako ti môžem pomôcť?"):
             role = "user" if m["role"] == "user" else "model"
             gemini_history.append({"role": role, "parts": [m["content"]]})
 
-        chat = model.start_chat(history=gemini_history)
+        # Zoznam overených modelov pre prípad výpadku alebo 404/429 chyby
+        dostupne_modely = ["gemini-2.0-flash", "gemini-pro"]
         
-        pauzy = [3, 8]
-        for pokus, cakanie in enumerate(pauzy):
+        uspesne = False
+        for nazov_modelu in dostupne_modely:
             try:
+                model = genai.GenerativeModel(
+                    model_name=nazov_modelu,
+                    system_instruction=ROLY[vybrana_rola],
+                    generation_config=generation_config
+                )
+                
+                chat = model.start_chat(history=gemini_history)
                 response = chat.send_message(obsah_spravy, stream=True)
                 
                 plny_text = ""
@@ -141,11 +142,11 @@ if prompt := st.chat_input("Ako ti môžem pomôcť?"):
                 
                 message_placeholder.markdown(plny_text)
                 st.session_state.messages.append({"role": "assistant", "content": plny_text})
+                uspesne = True
                 break
             except Exception as e:
-                if "429" in str(e) and pokus < len(pauzy) - 1:
-                    message_placeholder.warning(f"Siete sú vyťažené, čakám {cakanie} sekúnd...")
-                    time.sleep(cakanie)
-                else:
-                    message_placeholder.error(f"Chyba: {str(e)}")
-                    break
+                # Ak zlyhá jeden model, automaticky skúsi druhý
+                continue
+
+        if not uspesne:
+            message_placeholder.error("Siete sú momentálne preťažené alebo bol dosiahnutý limit. Počkajte 30 sekund a skúste znova.")
