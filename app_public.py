@@ -11,7 +11,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. Vesmírne CSS pozadie a štýlovanie Gemini menu
+# 2. Vesmírne CSS pozadie a štýlovanie vstupu s pluskom
 st.markdown("""
     <style>
     .stApp {
@@ -52,16 +52,23 @@ st.markdown("""
         background-color: rgba(15, 23, 42, 0.9) !important;
     }
 
+    /* Štýl pre okrúhle tlačidlo pluska vedľa vstupu */
+    .stPopover>button {
+        border-radius: 50% !important;
+        width: 45px !important;
+        height: 45px !important;
+        padding: 0 !important;
+        font-size: 20px !important;
+        background-color: rgba(30, 41, 59, 0.8) !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    }
+
     .stButton>button {
         border-radius: 10px;
         border: 1px solid rgba(255, 255, 255, 0.15);
         background-color: rgba(30, 41, 59, 0.7);
         color: #f8fafc;
         transition: all 0.2s ease;
-    }
-    .stButton>button:hover {
-        background-color: rgba(51, 65, 85, 0.9);
-        border-color: rgba(255, 255, 255, 0.3);
     }
 
     /* Štýlovanie načítavacej animácie */
@@ -70,7 +77,7 @@ st.markdown("""
         border-left-color: #38bdf8 !important;
     }
 
-    /* Dizajn ponuky tlačidiel v menu */
+    /* Popover menu dizajn */
     div[data-testid="stPopoverBody"] {
         background-color: #161b22 !important;
         border: 1px solid rgba(255, 255, 255, 0.15);
@@ -169,38 +176,44 @@ for msg in aktualny_chat["messages"]:
     with st.chat_message(msg["role"], avatar=avatar):
         st.markdown(msg["content"])
 
-# 8. Rozširujúce menu nástrojov (podľa snímky)
-with st.popover("➕ Pridať nástroje a súbory", use_container_width=True):
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.caption("📎 Súbory")
-    with col2:
-        st.caption("▲ Disk")
-    with col3:
-        st.caption("🌸 Fotky")
-    with col4:
-        st.caption("📓 Notebook")
+# 8. Vstupné pole s tlačidlom "+" po ľavej strane
+col_plus, col_input = st.columns([0.12, 0.88])
 
-    nahraty_subor = st.file_uploader(
-        "Nahrať zo zariadenia:",
-        type=["png", "jpg", "jpeg", "txt"],
-        label_visibility="collapsed"
-    )
+with col_plus:
+    with st.popover("➕"):
+        c1, c2, c3, c4 = st.columns(4)
+        with c1:
+            st.caption("📎 Súbory")
+        with c2:
+            st.caption("▲ Disk")
+        with c3:
+            st.caption("🌸 Fotky")
+        with c4:
+            st.caption("📓 Notebook")
 
-    st.divider()
+        nahraty_subor = st.file_uploader(
+            "Nahrať zo zariadenia:",
+            type=["png", "jpg", "jpeg", "txt"],
+            label_visibility="collapsed"
+        )
 
-    if st.button("🖼 **Obrázky** — Vytvárajte a upravujte", use_container_width=True):
-        st.session_state.aktivny_rezim = "Obrázky"
-        st.rerun()
-    if st.button("🎵 **Hudba** — Vytvárajte zvukové stopy", use_container_width=True):
-        st.session_state.aktivny_rezim = "Hudba"
-        st.rerun()
-    if st.button("🖥 **Canvas** — Programujte, píšte alebo vytvárajte snímky", use_container_width=True):
-        st.session_state.aktivny_rezim = "Canvas"
-        st.rerun()
+        st.divider()
 
-# 9. Spracovanie vstupu s animáciou načítania
-if prompt := st.chat_input("Ako ti môžem pomôcť?"):
+        if st.button("🖼 **Obrázky** — Vytvárajte a upravujte", use_container_width=True):
+            st.session_state.aktivny_rezim = "Obrázky"
+            st.rerun()
+        if st.button("🎵 **Hudba** — Vytvárajte zvukové stopy", use_container_width=True):
+            st.session_state.aktivny_rezim = "Hudba"
+            st.rerun()
+        if st.button("🖥 **Canvas** — Programujte, píšte alebo vytvárajte snímky", use_container_width=True):
+            st.session_state.aktivny_rezim = "Canvas"
+            st.rerun()
+
+with col_input:
+    prompt = st.chat_input("Ako ti môžem pomôcť?")
+
+# 9. Spracovanie vstupu
+if prompt:
     if len(aktualny_chat["messages"]) == 0:
         aktualny_chat["title"] = prompt[:18] + "..." if len(prompt) > 18 else prompt
 
@@ -221,7 +234,6 @@ if prompt := st.chat_input("Ako ti môžem pomôcť?"):
 
             obsah_spravy = [prompt]
 
-            # Prispôsobenie kontextu podľa zvoleného režimu z menu
             if st.session_state.aktivny_rezim == "Obrázky":
                 obsah_spravy.append("\n[Používateľ zvolil režim vytvárania a úpravy obrázkov]")
             elif st.session_state.aktivny_rezim == "Hudba":
@@ -229,7 +241,7 @@ if prompt := st.chat_input("Ako ti môžem pomôcť?"):
             elif st.session_state.aktivny_rezim == "Canvas":
                 obsah_spravy.append("\n[Používateľ zvolil režim Canvas na vývoj kódu a tvorbu snímok]")
 
-            if nahraty_subor is not None:
+            if 'nahraty_subor' in locals() and nahraty_subor is not None:
                 if nahraty_subor.type in ["image/png", "image/jpeg", "image/jpg"]:
                     img = Image.open(nahraty_subor)
                     obsah_spravy.append(img)
