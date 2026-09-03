@@ -5,7 +5,7 @@ from PIL import Image
 # 1. Nastavenie stránky
 st.set_page_config(
     page_title="Polaris",
-    page_icon="✦",
+    page_icon="✨",
     layout="centered",
     initial_sidebar_state="expanded"
 )
@@ -63,7 +63,7 @@ ROLY = {
     "Stručná asistentka": "Voláš sa Polaris. Vyjadruješ sa v ženskom rode. Tvoja odpoveď musí mať maximálne 2 až 3 vety po slovensky."
 }
 
-st.title("✦ Polaris")
+st.title("✨ Polaris")
 st.caption("Tvoja osobná AI asistentka")
 
 # 5. Bočný panel
@@ -104,7 +104,7 @@ if "messages" not in st.session_state:
 
 # 7. Zobrazenie histórie konverzácie
 for msg in st.session_state.messages:
-    avatar = "✦" if msg["role"] == "assistant" else None
+    avatar = "✨" if msg["role"] == "assistant" else None
     with st.chat_message(msg["role"], avatar=avatar):
         st.markdown(msg["content"])
 
@@ -114,7 +114,7 @@ if prompt := st.chat_input("Ako ti môžem dnes pomôcť?"):
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    with st.chat_message("assistant", avatar="✦"):
+    with st.chat_message("assistant", avatar="✨"):
         message_placeholder = st.empty()
 
         try:
@@ -142,16 +142,13 @@ if prompt := st.chat_input("Ako ti môžem dnes pomôcť?"):
                 gemini_history.append({"role": role, "parts": [m["content"]]})
 
             chat = model.start_chat(history=gemini_history)
-            
-            response = chat.send_message(obsah_spravy, stream=True)
-            
-            plny_text = ""
-            for chunk in response:
-                plny_text += chunk.text
-                message_placeholder.markdown(plny_text + "▌")
-            
-            message_placeholder.markdown(plny_text)
-            st.session_state.messages.append({"role": "assistant", "content": plny_text})
+            The error occurs because Streamlit's `st.chat_message()` parameter `avatar` accepts standard emoji characters, image paths, or URLs, but it does not support special symbol characters like `✦` (black diamond suit / symbol) directly as an avatar.
 
-        except Exception as e:
-            message_placeholder.error(f"Chyba pri generovaní odpovede: {str(e)}")
+### **Solution**
+
+Replace the non-emoji symbol with a valid emoji character, an image URL, or a local image path:
+
+1. **Use a standard emoji:**
+   ```python
+   with st.chat_message("assistant", avatar="✨"):
+       st.write("Hello!") 
