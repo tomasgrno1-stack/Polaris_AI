@@ -104,7 +104,7 @@ if prompt := st.chat_input("Ako ti môžem pomôcť?"):
         )
 
         model = genai.GenerativeModel(
-            model_name="gemini-3.6-flash",
+            model_name="gemini-1.5-flash",
             system_instruction=ROLY[vybrana_rola],
             generation_config=generation_config
         )
@@ -128,9 +128,10 @@ if prompt := st.chat_input("Ako ti môžem pomôcť?"):
 
         chat = model.start_chat(history=gemini_history)
         
-        # Automatický pokus o opakovanie pri prečerpaní limitu (3 pokusy)
+        # Automatický retry mechanizmus s predĺženým čakaním
         uspesne = False
-        for pokus in range(3):
+        pauzy = [5, 12, 20]
+        for pokus, cakanie in enumerate(pauzy):
             try:
                 response = chat.send_message(obsah_spravy, stream=True)
                 
@@ -144,9 +145,9 @@ if prompt := st.chat_input("Ako ti môžem pomôcť?"):
                 uspesne = True
                 break
             except Exception as e:
-                if "429" in str(e) and pokus < 2:
-                    message_placeholder.warning("Linka je plná, čakám 5 sekúnd a skúšam znova...")
-                    time.sleep(5)
+                if "429" in str(e) and pokus < len(pauzy) - 1:
+                    message_placeholder.warning(f"Zasiahnutý limit, čakám {cakanie} sekúnd...")
+                    time.sleep(cakanie)
                 else:
                     message_placeholder.error(f"Chyba: {str(e)}")
                     break
