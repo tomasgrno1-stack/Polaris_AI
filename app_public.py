@@ -142,13 +142,16 @@ if prompt := st.chat_input("Ako ti môžem dnes pomôcť?"):
                 gemini_history.append({"role": role, "parts": [m["content"]]})
 
             chat = model.start_chat(history=gemini_history)
-            The error occurs because Streamlit's `st.chat_message()` parameter `avatar` accepts standard emoji characters, image paths, or URLs, but it does not support special symbol characters like `✦` (black diamond suit / symbol) directly as an avatar.
+            
+            response = chat.send_message(obsah_spravy, stream=True)
+            
+            plny_text = ""
+            for chunk in response:
+                plny_text += chunk.text
+                message_placeholder.markdown(plny_text + "▌")
+            
+            message_placeholder.markdown(plny_text)
+            st.session_state.messages.append({"role": "assistant", "content": plny_text})
 
-### **Solution**
-
-Replace the non-emoji symbol with a valid emoji character, an image URL, or a local image path:
-
-1. **Use a standard emoji:**
-   ```python
-   with st.chat_message("assistant", avatar="✨"):
-       st.write("Hello!") 
+        except Exception as e:
+            message_placeholder.error(f"Chyba pri generovaní odpovede: {str(e)}")
