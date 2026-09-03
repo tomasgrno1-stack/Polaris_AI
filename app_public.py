@@ -11,7 +11,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. CSS pozadie a zarovnanie spodnej lišty
+# 2. CSS pozadie, oprava vytrčajúceho panela a ikona používateľa
 st.markdown("""
     <style>
     .stApp {
@@ -52,20 +52,28 @@ st.markdown("""
         background-color: rgba(15, 23, 42, 0.9) !important;
     }
 
-    /* Ukotvenie spodného panela dole */
+    /* Skrytie pozadia a obalov originálneho spodného panelu Streamlitu */
+    div[data-testid="stBottom"],
+    div[data-testid="stBottom"] > div {
+        background: transparent !important;
+        border: none !important;
+    }
+
+    /* Ukotvenie spodného panela a orezanie vytrčajúcich prvkov */
     div[data-testid="stHorizontalBlock"]:has(.stPopover) {
         position: fixed;
         bottom: 20px;
         left: 50%;
         transform: translateX(-50%);
-        width: 100%;
+        width: calc(100% - 40px);
         max-width: 730px;
         z-index: 100;
-        background-color: rgba(15, 23, 42, 0.95);
-        padding: 8px 12px;
+        background-color: #0f172a;
+        padding: 6px 12px;
         border-radius: 24px;
         border: 1px solid rgba(255, 255, 255, 0.15);
         align-items: center;
+        overflow: hidden;
     }
 
     /* Tlačidlo pluska v lište */
