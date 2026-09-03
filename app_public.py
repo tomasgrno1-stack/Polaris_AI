@@ -192,7 +192,7 @@ st.title("✨ Polaris")
 st.caption(f"Tvoja osobná AI asistentka | Režim: {st.session_state.aktivny_rezim}")
 
 for msg in aktualny_chat["messages"]:
-    avatar = "✨" if msg["role"] == "assistant" else None
+    avatar = "✨" if msg["role"] == "assistant" else "👤"
     with st.chat_message(msg["role"], avatar=avatar):
         st.markdown(msg["content"])
 
@@ -227,7 +227,7 @@ if prompt:
         aktualny_chat["title"] = prompt[:18] + "..." if len(prompt) > 18 else prompt
 
     aktualny_chat["messages"].append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
+    with st.chat_message("user", avatar="👤"):
         st.markdown(prompt)
 
     with st.chat_message("assistant", avatar="✨"):
