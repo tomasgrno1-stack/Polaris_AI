@@ -10,7 +10,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. Vlastné CSS pre vesmírny / galaktický motív
+# 2. Vlastné CSS pre galaktický motív
 st.markdown("""
     <style>
     /* Hlavné pozadie s tématikou galaxie */
@@ -20,14 +20,14 @@ st.markdown("""
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
     
-    /* Úprava bočného panela s jemnou priehľadnosťou */
+    /* Úprava bočného panela */
     [data-testid="stSidebar"] {
         background-color: rgba(15, 23, 42, 0.85) !important;
         backdrop-filter: blur(10px);
         border-right: 1px solid rgba(255, 255, 255, 0.1);
     }
     
-    /* Úprava správ chatu s efektom skla (glassmorphism) */
+    /* Úprava správ chatu (Glassmorphism) */
     [data-testid="stChatMessage"] {
         background-color: rgba(30, 27, 75, 0.4) !important;
         backdrop-filter: blur(8px);
@@ -128,10 +128,18 @@ if prompt := st.chat_input("Ako ti môžem dnes pomôcť?"):
         try:
             tools = ["google_search_retrieval"] if povolit_web else None
 
+            # Optimalizácia konfigurácie pre maximálnu rýchlosť
+            generation_config = genai.types.GenerationConfig(
+                temperature=0.7,
+                top_p=0.8,
+                top_k=40
+            )
+
             model = genai.GenerativeModel(
                 model_name=vybrany_model,
                 system_instruction=ROLY[vybrana_rola],
-                tools=tools
+                tools=tools,
+                generation_config=generation_config
             )
 
             obsah_spravy = [prompt]
@@ -151,6 +159,7 @@ if prompt := st.chat_input("Ako ti môžem dnes pomôcť?"):
 
             chat = model.start_chat(history=gemini_history)
             
+            # Priame streamovanie s okamžitým renderingom
             response = chat.send_message(obsah_spravy, stream=True)
             
             plny_text = ""
