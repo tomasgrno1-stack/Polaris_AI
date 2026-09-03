@@ -10,48 +10,40 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. Vlastné CSS pre galaktický motív
+# 2. Vlastné CSS pre čistý tmavý vzhľad
 st.markdown("""
     <style>
-    /* Hlavné pozadie s tématikou galaxie */
+    /* Hlavné pozadie a písmo */
     .stApp {
-        background: radial-gradient(circle at 50% 20%, #1e1b4b 0%, #0f172a 50%, #020617 100%) !important;
-        background-attachment: fixed !important;
+        background-color: #0e1117;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
     
     /* Úprava bočného panela */
     [data-testid="stSidebar"] {
-        background-color: rgba(15, 23, 42, 0.85) !important;
-        backdrop-filter: blur(10px);
-        border-right: 1px solid rgba(255, 255, 255, 0.1);
+        background-color: #161b22;
+        border-right: 1px solid #30363d;
     }
     
-    /* Úprava správ chatu (Glassmorphism) */
+    /* Úprava správ chatu */
     [data-testid="stChatMessage"] {
-        background-color: rgba(30, 27, 75, 0.4) !important;
-        backdrop-filter: blur(8px);
-        border: 1px solid rgba(139, 92, 246, 0.2);
-        border-radius: 16px;
+        background-color: #161b22;
+        border: 1px solid #30363d;
+        border-radius: 12px;
         padding: 1rem;
         margin-bottom: 0.8rem;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     }
     
     /* Vstupné pole (Chat Input) */
     [data-testid="stChatInput"] {
-        border-radius: 24px;
-        border: 1px solid rgba(139, 92, 246, 0.3);
-        background-color: rgba(15, 23, 42, 0.8) !important;
+        border-radius: 20px;
+        border: 1px solid #30363d;
     }
     
-    /* Nadpis a texty */
+    /* Nadpis a podnadpis */
     h1 {
         font-weight: 600;
         letter-spacing: -0.5px;
-        background: linear-gradient(135deg, #a78bfa 0%, #f472b6 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -128,7 +120,7 @@ if prompt := st.chat_input("Ako ti môžem dnes pomôcť?"):
         try:
             tools = ["google_search_retrieval"] if povolit_web else None
 
-            # Optimalizácia konfigurácie pre maximálnu rýchlosť
+            # Optimalizácia pre rýchlejšie odpovede
             generation_config = genai.types.GenerationConfig(
                 temperature=0.7,
                 top_p=0.8,
@@ -159,7 +151,6 @@ if prompt := st.chat_input("Ako ti môžem dnes pomôcť?"):
 
             chat = model.start_chat(history=gemini_history)
             
-            # Priame streamovanie s okamžitým renderingom
             response = chat.send_message(obsah_spravy, stream=True)
             
             plny_text = ""
