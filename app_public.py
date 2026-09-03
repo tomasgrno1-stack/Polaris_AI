@@ -103,8 +103,9 @@ if prompt := st.chat_input("Ako ti môžem pomôcť?"):
             max_output_tokens=1000
         )
 
+        # Používame oficiálny plne podporovaný názov modelu
         model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
+            model_name="gemini-1.5-flash-latest",
             system_instruction=ROLY[vybrana_rola],
             generation_config=generation_config
         )
@@ -128,9 +129,8 @@ if prompt := st.chat_input("Ako ti môžem pomôcť?"):
 
         chat = model.start_chat(history=gemini_history)
         
-        # Automatický retry mechanizmus s predĺženým čakaním
         uspesne = False
-        pauzy = [5, 12, 20]
+        pauzy = [4, 10]
         for pokus, cakanie in enumerate(pauzy):
             try:
                 response = chat.send_message(obsah_spravy, stream=True)
