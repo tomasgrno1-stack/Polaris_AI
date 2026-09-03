@@ -48,10 +48,10 @@ else:
 
 # 4. Definícia rolí v ženskom rode
 ROLY = {
-    "Osobná asistentka": "Voláš sa Polaris. Si moja osobná AI asistentka. Hovoríš výlučne po slovensky a vyjadruješ sa striktne v ženskom rode (napr. 'som pripravená', 'myslela som', 'skontrolovala som'). Si priateľská, inteligentná a nápomocná.",
-    "Programátorka": "Voláš sa Polaris. Si expertka na programovanie, Python, web a technológie. Vyjadruješ sa v ženskom rode a odpovedáš presne s prehľadným kódom a vysvetleniami po slovensky.",
-    "Učiteľka angličtiny": "Voláš sa Polaris. Si trpezlivá učiteľka angličtiny. Vyjadruješ sa v ženskom rode. Na správy odpovedáš po anglicky a pod to pridáš slovenský preklad.",
-    "Stručná asistentka": "Voláš sa Polaris. Vyjadruješ sa v ženskom rode. Tvoja odpoveď musí mať maximálne 2 až 3 vety po slovensky."
+    "Osobná asistentka": "Voláš sa Polaris. Si moja osobná AI asistentka. Hovoríš výlučne po slovensky v ženskom rode. Odpovedaj stručne a k veci.",
+    "Programátorka": "Voláš sa Polaris. Si expertka na Python a web. Odpovedaj stručne s prehľadným kódom po slovensky.",
+    "Učiteľka angličtiny": "Voláš sa Polaris. Odpovedaj po anglicky a pod to pridaj stručný slovenský preklad.",
+    "Stručná asistentka": "Voláš sa Polaris. Odpovedaj maximálne v 2-3 krátkych vetách po slovensky."
 }
 
 st.title("✨ Polaris")
@@ -60,29 +60,16 @@ st.caption("Tvoja osobná AI asistentka")
 # 5. Bočný panel
 with st.sidebar:
     st.header("⚙️ Nastavenia")
-    
     vybrana_rola = st.selectbox("Rola Polaris:", list(ROLY.keys()))
-    vybrany_model = st.selectbox(
-        "Model AI:",
-        ["gemini-3.6-flash", "gemini-1.5-pro"],
-        help="gemini-3.6-flash je rýchly a najnovší model."
-    )
-    povolit_web = st.checkbox("🌐 Vyhľadávať na internete", value=False)
     
     st.divider()
     
     st.subheader("📎 Súbor / Obrázok")
     nahraty_subor = st.file_uploader(
-        "Prilož súbor pre Polaris:",
-        type=["png", "jpg", "jpeg", "pdf", "txt"],
-        help="Nahraj obrázok na analýzu alebo textový súbor/PDF na zhrnutie."
+        "Prilož súbor:",
+        type=["png", "jpg", "jpeg", "txt"],
+        help="Nahraj obrázok alebo textový súbor."
     )
-    
-    if nahraty_subor:
-        if nahraty_subor.type in ["image/png", "image/jpeg", "image/jpg"]:
-            st.image(nahraty_subor, caption="Náhľad obrázka", use_container_width=True)
-        else:
-            st.success(f"Priložený súbor: {nahraty_subor.name}")
 
     st.divider()
     if st.button("🗑 Vymazať históriu", use_container_width=True):
@@ -99,8 +86,8 @@ for msg in st.session_state.messages:
     with st.chat_message(msg["role"], avatar=avatar):
         st.markdown(msg["content"])
 
-# 8. Spracovanie vstupu od používateľa
-if prompt := st.chat_input("Ako ti môžem dnes pomôcť?"):
+# 8. Spracovanie vstupu
+if prompt := st.chat_input("Ako ti môžem pomôcť?"):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
@@ -109,18 +96,18 @@ if prompt := st.chat_input("Ako ti môžem dnes pomôcť?"):
         message_placeholder = st.empty()
 
         try:
-            tools = ["google_search_retrieval"] if povolit_web else None
-
+            # Maximálna optimalizácia pre rýchlosť generovania
             generation_config = genai.types.GenerationConfig(
-                temperature=0.7,
+                temperature=0.5,
                 top_p=0.8,
-                top_k=40
+                top_k=20,
+                max_output_tokens=1000  # Zabraňuje generovaniu zbytočne dlhých slohov
             )
 
+            # Používame priamo rýchly model bez webových nástrojov
             model = genai.GenerativeModel(
-                model_name=vybrany_model,
+                model_name="gemini-3.6-flash",
                 system_instruction=ROLY[vybrana_rola],
-                tools=tools,
                 generation_config=generation_config
             )
 
@@ -132,10 +119,10 @@ if prompt := st.chat_input("Ako ti môžem dnes pomôcť?"):
                     obsah_spravy.append(img)
                 elif nahraty_subor.type == "text/plain":
                     text_suboru = nahraty_subor.read().decode("utf-8")
-                    obsah_spravy.append(f"\n\nObsah priloženého textového súboru:\n{text_suboru}")
+                    obsah_spravy.append(f"\n\nText zo súboru:\n{text_suboru}")
 
-            # Orezanie histórie na posledných 6 správ pre úsporu kvóty
-            pouzita_historia = st.session_state.messages[:-1][-6:]
+            # Posielame iba posledné 4 správy na udržanie bleskovej odozvy
+            pouzita_historia = st.session_state.messages[:-1][-4:]
             
             gemini_history = []
             for m in pouzita_historia:
@@ -156,6 +143,6 @@ if prompt := st.chat_input("Ako ti môžem dnes pomôcť?"):
 
         except Exception as e:
             if "429" in str(e):
-                message_placeholder.error("Dosiahli ste limit požiadaviek za minútu. Počkajte približne 30-60 sekúnd a skúste to znovu.")
+                message_placeholder.error("Siete Google sú preťažené (Limit 429). Počkajte 20 sekúnd a stlačte Enter znovu.")
             else:
-                message_placeholder.error(f"Chyba pri generovaní odpovede: {str(e)}")
+                message_placeholder.error(f"Chyba: {str(e)}")
