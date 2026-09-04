@@ -14,7 +14,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. CSS pozadie a štýlovanie
+# 2. Moderné CSS štýlovanie
 st.markdown("""
     <style>
     .stApp {
@@ -34,13 +34,29 @@ st.markdown("""
         z-index: 0;
     }
 
+    /* Bočný panel */
     [data-testid="stSidebar"] {
         background-color: rgba(15, 23, 42, 0.85) !important;
         backdrop-filter: blur(12px);
         border-right: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    /* Priesvitné pozadie pre správy v chate */
+    /* Glassmorphism tlačidlá v bočnom paneli */
+    [data-testid="stSidebar"] .stButton > button {
+        background: rgba(30, 41, 59, 0.4) !important;
+        backdrop-filter: blur(6px);
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 12px !important;
+        transition: all 0.2s ease-in-out !important;
+    }
+
+    [data-testid="stSidebar"] .stButton > button:hover {
+        background: rgba(56, 189, 248, 0.15) !important;
+        border-color: rgba(56, 189, 248, 0.4) !important;
+        transform: translateX(2px);
+    }
+
+    /* Priesvitné správy chatu */
     [data-testid="stChatMessage"] {
         background-color: transparent !important;
         border: none !important;
@@ -49,20 +65,33 @@ st.markdown("""
         margin-bottom: 0.8rem;
     }
 
+    /* Využitie kruhových efektov pre avatary */
+    [data-testid="stChatMessageAvatarUser"] {
+        background: linear-gradient(135deg, #6366f1, #a855f7) !important;
+        border-radius: 50% !important;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    [data-testid="stChatMessageAvatarAssistant"] {
+        background: linear-gradient(135deg, #0ea5e9, #a855f7) !important;
+        border-radius: 50% !important;
+        box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+    }
+
     [data-testid="stChatInput"] {
         border-radius: 20px;
         border: 1px solid rgba(255, 255, 255, 0.2);
         background-color: rgba(15, 23, 42, 0.9) !important;
     }
 
-    /* Skrytie pozadia a obalov originálneho spodného panelu Streamlitu */
+    /* Skrytie pozadia spodného panela Streamlitu */
     div[data-testid="stBottom"],
     div[data-testid="stBottom"] > div {
         background: transparent !important;
         border: none !important;
     }
 
-    /* Ukotvenie spodného panela */
+    /* Ukotvenie spodnej lišty */
     div[data-testid="stHorizontalBlock"]:has(.stPopover) {
         position: fixed;
         bottom: 20px;
@@ -89,17 +118,17 @@ st.markdown("""
         border: 1px solid rgba(255, 255, 255, 0.2) !important;
     }
 
-    .stButton>button {
-        border-radius: 10px;
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        background-color: rgba(30, 41, 59, 0.7);
-        color: #f8fafc;
-        transition: all 0.2s ease;
+    /* Animovaný indikátor načítania */
+    @keyframes pulseGlow {
+        0% { box-shadow: 0 0 5px rgba(168, 85, 247, 0.4); }
+        50% { box-shadow: 0 0 18px rgba(56, 189, 248, 0.8); }
+        100% { box-shadow: 0 0 5px rgba(168, 85, 247, 0.4); }
     }
 
     div[data-baseweb="spinner"] {
         border-top-color: #a855f7 !important;
         border-left-color: #38bdf8 !important;
+        animation: pulseGlow 1.5s infinite ease-in-out;
     }
 
     div[data-testid="stPopoverBody"] {
@@ -177,7 +206,6 @@ with st.sidebar:
     st.divider()
     st.subheader("💬 História chatov")
     
-    # Prechádzanie histórie chatov
     for chat_id, chat_data in list(st.session_state.chats.items()):
         is_active = (chat_id == st.session_state.current_chat_id)
         label = f"📍 {chat_data['title']}" if is_active else chat_data['title']
@@ -188,7 +216,6 @@ with st.sidebar:
                 st.session_state.current_chat_id = chat_id
                 st.rerun()
         with col2:
-            # Tlačidlo pre zapnutie režimu úprav
             if st.button("✏️", key=f"edit_btn_{chat_id}"):
                 st.session_state[f"editing_{chat_id}"] = not st.session_state.get(f"editing_{chat_id}", False)
                 st.rerun()
@@ -202,7 +229,6 @@ with st.sidebar:
                         vytvor_novy_chat()
                 st.rerun()
 
-        # Ak je kliknuté tlačidlo ceruzky, zobrazí sa vstupné pole priamo pod tlačidlom chatu
         if st.session_state.get(f"editing_{chat_id}", False):
             novy_nazov = st.text_input("Nový názov:", value=chat_data['title'], key=f"rename_input_{chat_id}")
             if st.button("Uložiť názov", key=f"save_rename_{chat_id}", use_container_width=True):
@@ -214,11 +240,23 @@ with st.sidebar:
     st.divider()
     st.header("⚙️ Nastavenia")
     vybrana_rola = st.selectbox("Rola Polaris:", list(ROLY.keys()))
+
 # 7. Zobrazenie správ
 aktualny_chat = st.session_state.chats[st.session_state.current_chat_id]
 
 st.title("✨ Polaris")
 st.caption(f"Tvorca: Tomáš Grňo | Režim: {st.session_state.aktivny_rezim}")
+
+# Hero úvodná sekcia pre nový prázdny chat
+if len(aktualny_chat["messages"]) == 0:
+    st.markdown("""
+        <div style="text-align: center; padding: 50px 20px 20px 20px;">
+            <h2 style="background: linear-gradient(to right, #38bdf8, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 2rem; font-weight: 700;">
+                Ahoj, ja som Polaris ✨
+            </h2>
+            <p style="color: #94a3b8; font-size: 1.05rem; margin-top: 8px;">Ako ti môžem dnes pomôcť?</p>
+        </div>
+    """, unsafe_allow_html=True)
 
 for idx, msg in enumerate(aktualny_chat["messages"]):
     avatar = "✨" if msg["role"] == "assistant" else "👤"
@@ -268,25 +306,21 @@ if prompt:
     sprava_pouzivatela = {"role": "user", "content": prompt}
     obsah_spravy = [prompt]
     
-    # Spracovanie nahrávaného súboru
     if 'nahraty_subor' in locals() and nahraty_subor is not None:
         subor_typ = nahraty_subor.type
         nazov_suboru = nahraty_subor.name
         
-        # Obrázky
         if subor_typ in ["image/png", "image/jpeg", "image/jpg"]:
             img = Image.open(nahraty_subor)
             obsah_spravy.append(img)
             sprava_pouzivatela["image"] = img
             sprava_pouzivatela["file_info"] = nazov_suboru
             
-        # Textové súbory TXT
         elif subor_typ == "text/plain":
             text_suboru = nahraty_subor.read().decode("utf-8")
             obsah_spravy.append(f"\n\nText zo súboru {nazov_suboru}:\n{text_suboru}")
             sprava_pouzivatela["file_info"] = nazov_suboru
             
-        # PDF súbory
         elif subor_typ == "application/pdf":
             try:
                 pdf_reader = pypdf.PdfReader(nahraty_subor)
@@ -298,7 +332,6 @@ if prompt:
             except Exception as e:
                 st.error(f"Chyba pri čítaní PDF: {e}")
 
-        # Word súbory (.docx)
         elif nazov_suboru.endswith(".docx"):
             try:
                 doc = docx.Document(nahraty_subor)
@@ -308,7 +341,6 @@ if prompt:
             except Exception as e:
                 st.error(f"Chyba pri čítaní Word súboru: {e}")
 
-        # Excel a CSV súbory (.xlsx, .xls, .csv)
         elif nazov_suboru.endswith((".xlsx", ".xls", ".csv")):
             try:
                 if nazov_suboru.endswith(".csv"):
@@ -316,7 +348,6 @@ if prompt:
                 else:
                     df = pd.read_excel(nahraty_subor)
                 
-                # Prevedie prvé riadky tabuľky na Markdown text
                 excel_text = df.to_markdown(index=False)
                 obsah_spravy.append(f"\n\nÚdaje z tabuľky {nazov_suboru}:\n{excel_text}")
                 sprava_pouzivatela["file_info"] = nazov_suboru
