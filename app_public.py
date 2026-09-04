@@ -177,22 +177,21 @@ with st.sidebar:
     st.divider()
     st.subheader("💬 História chatov")
     
+    # Prechádzanie histórie chatov
     for chat_id, chat_data in list(st.session_state.chats.items()):
         is_active = (chat_id == st.session_state.current_chat_id)
         label = f"📍 {chat_data['title']}" if is_active else chat_data['title']
         
-        col1, col2, col3 = st.columns([0.65, 0.17, 0.18])
+        col1, col2, col3 = st.columns([0.7, 0.15, 0.15])
         with col1:
             if st.button(label, key=f"select_{chat_id}", use_container_width=True):
                 st.session_state.current_chat_id = chat_id
                 st.rerun()
         with col2:
-            with st.popover("✏️"):
-                novy_nazov = st.text_input("Nový názov:", value=chat_data['title'], key=f"rename_input_{chat_id}")
-                if st.button("Uložiť", key=f"save_rename_{chat_id}"):
-                    if novy_nazov.strip():
-                        st.session_state.chats[chat_id]['title'] = novy_nazov.strip()
-                        st.rerun()
+            # Tlačidlo pre zapnutie režimu úprav
+            if st.button("✏️", key=f"edit_btn_{chat_id}"):
+                st.session_state[f"editing_{chat_id}"] = not st.session_state.get(f"editing_{chat_id}", False)
+                st.rerun()
         with col3:
             if st.button("🗑", key=f"del_{chat_id}"):
                 del st.session_state.chats[chat_id]
@@ -203,10 +202,18 @@ with st.sidebar:
                         vytvor_novy_chat()
                 st.rerun()
 
+        # Ak je kliknuté tlačidlo ceruzky, zobrazí sa vstupné pole priamo pod tlačidlom chatu
+        if st.session_state.get(f"editing_{chat_id}", False):
+            novy_nazov = st.text_input("Nový názov:", value=chat_data['title'], key=f"rename_input_{chat_id}")
+            if st.button("Uložiť názov", key=f"save_rename_{chat_id}", use_container_width=True):
+                if novy_nazov.strip():
+                    st.session_state.chats[chat_id]['title'] = novy_nazov.strip()
+                    st.session_state[f"editing_{chat_id}"] = False
+                    st.rerun()
+
     st.divider()
     st.header("⚙️ Nastavenia")
     vybrana_rola = st.selectbox("Rola Polaris:", list(ROLY.keys()))
-
 # 7. Zobrazenie správ
 aktualny_chat = st.session_state.chats[st.session_state.current_chat_id]
 
