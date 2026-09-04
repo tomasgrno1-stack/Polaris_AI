@@ -11,7 +11,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. CSS pozadie, oprava vytrčajúceho panela a ikona používateľa
+# 2. CSS pozadie, oprava vytrčajúceho panela a štýlovanie
 st.markdown("""
     <style>
     .stApp {
@@ -197,7 +197,7 @@ with st.sidebar:
 aktualny_chat = st.session_state.chats[st.session_state.current_chat_id]
 
 st.title("✨ Polaris")
-st.caption(f"Tvoja osobná AI asistentka | Režim: {st.session_state.aktivny_rezim}")
+st.caption(f"Vytvoril: Tomáš Grňo | Režim: {st.session_state.aktivny_rezim}")
 
 for msg in aktualny_chat["messages"]:
     avatar = "✨" if msg["role"] == "assistant" else "👤"
