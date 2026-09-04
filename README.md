@@ -15,3 +15,5 @@ Polaris is a modern web application built with **Streamlit** and **Google Gemini
 * **Multimodal File Analysis:** Support for attaching images (PNG, JPG), documents (PDF, TXT, DOCX), and spreadsheets (XLSX, CSV).
 * **Chat History Management:** Ability to create new conversations, rename them, or delete individual chats.
 * **Modern Dark Glassmorphism UI:** Stylish dark interface with custom animations and a personalized scrollbar.
+
+Here is link to see ✨Polaris AI: https://polaris--ai.streamlit.app/
