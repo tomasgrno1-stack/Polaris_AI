@@ -2,6 +2,7 @@ import streamlit as st
 import google.generativeai as genai
 from PIL import Image
 import uuid
+import pypdf
 
 # 1. Nastavenie stránky
 st.set_page_config(
@@ -216,7 +217,16 @@ st.caption(f"Vytvoril: Tomáš Grňo | Režim: {st.session_state.aktivny_rezim}"
 for idx, msg in enumerate(aktualny_chat["messages"]):
     avatar = "✨" if msg["role"] == "assistant" else "👤"
     with st.chat_message(msg["role"], avatar=avatar):
+        # Náhľad priloženého obrázka
+        if "image" in msg and msg["image"] is not None:
+            st.image(msg["image"], use_container_width=True)
+        
+        # Náhľad informácie o priloženom súbore
+        if "file_info" in msg and msg["file_info"]:
+            st.caption(f"📎 Priložený súbor: **{msg['file_info']}**")
+            
         st.markdown(msg["content"])
+        
         if msg["role"] == "assistant":
             with st.popover("📋 Kopírovať"):
                 st.code(msg["content"], language=None)
@@ -227,8 +237,8 @@ col_plus, col_input = st.columns([0.1, 0.9])
 with col_plus:
     with st.popover("➕"):
         nahraty_subor = st.file_uploader(
-            "Priložiť súbor:",
-            type=["png", "jpg", "jpeg", "txt"]
+            "Priložiť súbor (Obrázok, TXT, PDF):",
+            type=["png", "jpg", "jpeg", "txt", "pdf"]
         )
 
         st.divider()
@@ -251,8 +261,44 @@ if prompt:
     if len(aktualny_chat["messages"]) == 0:
         aktualny_chat["title"] = prompt[:18] + "..." if len(prompt) > 18 else prompt
 
-    aktualny_chat["messages"].append({"role": "user", "content": prompt})
+    sprava_pouzivatela = {"role": "user", "content": prompt}
+    
+    obsah_spravy = [prompt]
+    
+    # Spracovanie nahrávaného súboru
+    if 'nahraty_subor' in locals() and nahraty_subor is not None:
+        subor_typ = nahraty_subor.type
+        nazov_suboru = nahraty_subor.name
+        
+        if subor_typ in ["image/png", "image/jpeg", "image/jpg"]:
+            img = Image.open(nahraty_subor)
+            obsah_spravy.append(img)
+            sprava_pouzivatela["image"] = img
+            sprava_pouzivatela["file_info"] = nazov_suboru
+            
+        elif subor_typ == "text/plain":
+            text_suboru = nahraty_subor.read().decode("utf-8")
+            obsah_spravy.append(f"\n\nText zo súboru {nazov_suboru}:\n{text_suboru}")
+            sprava_pouzivatela["file_info"] = nazov_suboru
+            
+        elif subor_typ == "application/pdf":
+            try:
+                pdf_reader = pypdf.PdfReader(nahraty_subor)
+                pdf_text = ""
+                for page in pdf_reader.pages:
+                    pdf_text += page.extract_text() or ""
+                obsah_spravy.append(f"\n\nObsah z PDF súboru {nazov_suboru}:\n{pdf_text}")
+                sprava_pouzivatela["file_info"] = nazov_suboru
+            except Exception as e:
+                st.error(f"Chyba pri čítaní PDF: {e}")
+
+    aktualny_chat["messages"].append(sprava_pouzivatela)
+    
     with st.chat_message("user", avatar="👤"):
+        if "image" in sprava_pouzivatela:
+            st.image(sprava_pouzivatela["image"], use_container_width=True)
+        if "file_info" in sprava_pouzivatela:
+            st.caption(f"📎 Priložený súbor: **{sprava_pouzivatela['file_info']}**")
         st.markdown(prompt)
 
     with st.chat_message("assistant", avatar="✨"):
@@ -266,22 +312,12 @@ if prompt:
                 max_output_tokens=1000
             )
 
-            obsah_spravy = [prompt]
-
             if st.session_state.aktivny_rezim == "Obrázky":
                 obsah_spravy.append("\n[Používateľ zvolil režim vytvárania a úpravy obrázkov]")
             elif st.session_state.aktivny_rezim == "Hudba":
                 obsah_spravy.append("\n[Používateľ zvolil režim vytvárania hudby a zvukov]")
             elif st.session_state.aktivny_rezim == "Canvas":
                 obsah_spravy.append("\n[Používateľ zvolil režim Canvas na vývoj kódu a tvorbu snímok]")
-
-            if 'nahraty_subor' in locals() and nahraty_subor is not None:
-                if nahraty_subor.type in ["image/png", "image/jpeg", "image/jpg"]:
-                    img = Image.open(nahraty_subor)
-                    obsah_spravy.append(img)
-                elif nahraty_subor.type == "text/plain":
-                    text_suboru = nahraty_subor.read().decode("utf-8")
-                    obsah_spravy.append(f"\n\nText zo súboru:\n{text_suboru}")
 
             pouzita_historia = aktualny_chat["messages"][:-1][-4:]
             
