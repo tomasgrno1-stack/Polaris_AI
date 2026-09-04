@@ -187,23 +187,29 @@ else:
     st.error("Chýba GOOGLE_API_KEY v Secrets!")
     st.stop()
 
-# Garantované zoradenie: Gemini 2.0 Flash ako primárny model
+# 4. Bezpečné a dynamické získanie dostupných modelov bez 404 chýb
 @st.cache_data(ttl=3600)
 def ziskaj_dostupne_modely():
-    priority_list = [
-        "gemini-2.0-flash",
-        "gemini-2.0-flash-lite",
-        "gemini-1.5-flash",
-        "gemini-1.5-pro"
-    ]
     try:
-        dostupne = [m.name.replace("models/", "") for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-        vysledok = [m for m in priority_list if m in dostupne]
-        return vysledok if vysledok else priority_list
+        modely = []
+        for m in genai.list_models():
+            if 'generateContent' in m.supported_generation_methods:
+                modely.append(m.name)
+        
+        if modely:
+            # Zoradenie: Flash / Flash-Lite verzie majú najvyššiu prioritu pre rýchlosť
+            flash_lite_modely = [m for m in modely if "flash-lite" in m.lower()]
+            flash_modely = [m for m in modely if "flash" in m.lower() and "flash-lite" not in m.lower()]
+            ostatne = [m for m in modely if "flash" not in m.lower()]
+            
+            zoradene = flash_lite_modely + flash_modely + ostatne
+            return zoradene
+            
+        return ["models/gemini-1.5-flash"]
     except Exception:
-        return priority_list
+        return ["models/gemini-1.5-flash"]
 
-# 4. Štruktúra pre ukladanie chatov
+# 5. Štruktúra pre ukladanie chatov
 if "chats" not in st.session_state:
     st.session_state.chats = {}
 
@@ -220,7 +226,7 @@ def vytvor_novy_chat():
     st.session_state.chats[nove_id] = {"title": "Polaris", "messages": []}
     st.session_state.current_chat_id = nove_id
 
-# 5. Definícia rolí
+# 6. Definícia rolí
 ROLY = {
     "Osobná asistentka": "Voláš sa Polaris. Si moja osobná AI asistentka. Hovoríš výlučne po slovensky v ženskom rode. Odpovedaj stručne a k veci.",
     "Programátorka": "Voláš sa Polaris. Si expertka na Python a web. Odpovedaj stručne s prehľadným kódom po slovensky.",
@@ -228,7 +234,7 @@ ROLY = {
     "Stručná asistentka": "Voláš sa Polaris. Odpovedaj maximálne v 2-3 krátkych vetách po slovensky."
 }
 
-# 6. Bočný panel
+# 7. Bočný panel
 with st.sidebar:
     st.title("✨ Polaris")
     
@@ -281,7 +287,7 @@ with st.sidebar:
     st.header("⚙️ Nastavenia")
     vybrana_rola = st.selectbox("Rola Polaris:", list(ROLY.keys()))
 
-# 7. Zobrazenie správ
+# 8. Zobrazenie správ
 aktualny_chat = st.session_state.chats[st.session_state.current_chat_id]
 
 st.title("✨ Polaris")
@@ -323,7 +329,7 @@ for idx, msg in enumerate(aktualny_chat["messages"]):
             with st.popover("📋 Kopírovať"):
                 st.code(msg["content"], language=None)
 
-# 8. Spodná lišta
+# 9. Spodná lišta
 col_plus, col_input = st.columns([0.1, 0.9])
 
 with col_plus:
@@ -348,10 +354,9 @@ with col_plus:
 with col_input:
     prompt_input = st.chat_input("Ako ti môžem pomôcť?")
 
-# Zachytenie vstupu z kartičky alebo z textového políčka
 prompt = prompt_input or st.session_state.pop("pouzity_prompt", None)
 
-# 9. Spracovanie vstupu
+# 10. Spracovanie vstupu
 if prompt:
     if len(aktualny_chat["messages"]) == 0:
         aktualny_chat["title"] = prompt[:18] + "..." if len(prompt) > 18 else prompt
