@@ -218,7 +218,7 @@ with st.sidebar:
 aktualny_chat = st.session_state.chats[st.session_state.current_chat_id]
 
 st.title("✨ Polaris")
-st.caption(f"Vytvoril: Tomáš Grňo | Režim: {st.session_state.aktivny_rezim}")
+st.caption(f"Tvorca: Tomáš Grňo | Režim: {st.session_state.aktivny_rezim}")
 
 for idx, msg in enumerate(aktualny_chat["messages"]):
     avatar = "✨" if msg["role"] == "assistant" else "👤"
