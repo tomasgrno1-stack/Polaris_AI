@@ -15,23 +15,18 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. Automatická detekcia jazyka používateľa podľa IP adresy
+# 2. Rýchla detekcia jazyka s krátkym timeoutom (max 1 sekunda)
 @st.cache_data(ttl=86400)
 def ziskaj_jazyk_pouzivatela():
     try:
-        response = requests.get("https://ipapi.co/json/", timeout=3)
+        response = requests.get("https://ipapi.co/json/", timeout=1)
         data = response.json()
         krajina = data.get("country_code", "US")
         
         jazyky = {
-            "SK": "sk",
-            "CZ": "cs",
-            "DE": "de",
-            "AT": "de",
-            "PL": "pl",
-            "ES": "es",
-            "FR": "fr",
-            "IT": "it"
+            "SK": "sk", "CZ": "cs", "DE": "de", 
+            "AT": "de", "PL": "pl", "ES": "es", 
+            "FR": "fr", "IT": "it"
         }
         return jazyky.get(krajina, "en")
     except Exception:
@@ -39,7 +34,7 @@ def ziskaj_jazyk_pouzivatela():
 
 jazyk_ui = ziskaj_jazyk_pouzivatela()
 
-# Slovník lokalizácie užívateľského rozhrania
+# Slovník lokalizácie rozhrania
 TEXTY = {
     "sk": {
         "title": "✨ Polaris",
@@ -226,23 +221,10 @@ else:
     st.error("Chýba GOOGLE_API_KEY v Secrets!")
     st.stop()
 
-# 5. Dynamické získanie modelov s výberom Flash verzii pre rýchlosť
-@st.cache_data(ttl=3600)
+# 5. Priamy výber najrýchlejších Flash modelov (bez pomalých API testov)
+@st.cache_data(ttl=86400)
 def ziskaj_dostupne_modely():
-    try:
-        modely = []
-        for m in genai.list_models():
-            if 'generateContent' in m.supported_generation_methods:
-                modely.append(m.name)
-        
-        if modely:
-            flash_modely = [m for m in modely if "flash" in m.lower()]
-            ostatne = [m for m in modely if "flash" not in m.lower()]
-            return flash_modely + ostatne
-            
-        return ["models/gemini-2.0-flash"]
-    except Exception:
-        return ["models/gemini-1.5-flash"]
+    return ["gemini-1.5-flash", "gemini-2.0-flash"]
 
 # 6. Správa session state
 if "chats" not in st.session_state:
@@ -261,7 +243,7 @@ def vytvor_novy_chat():
     st.session_state.chats[nove_id] = {"title": "Polaris", "messages": []}
     st.session_state.current_chat_id = nove_id
 
-# 7. Dynamické roly s detekciou jazyka vstupu (všetky reťazce na jednom riadku)
+# 7. Dynamické roly s detekciou jazyka
 ROLY = {
     "Personal Assistant": "You are Polaris, a personal AI assistant. ALWAYS respond in the EXACT same language that the user uses to write to you (e.g., if the user writes in Slovak, respond in Slovak; if in English, respond in English, etc.). Maintain a helpful, concise, and direct tone.",
     "Programmer": "You are Polaris, an expert programmer. ALWAYS respond in the EXACT same language used by the user. Provide concise answers with clean code blocks.",
@@ -378,7 +360,7 @@ with col_input:
 
 prompt = prompt_input or st.session_state.pop("pouzity_prompt", None)
 
-# 11. Generovanie odpovede
+# 11. Generovanie odpovede bez st.rerun()
 if prompt:
     if len(aktualny_chat["messages"]) == 0:
         aktualny_chat["title"] = prompt[:18] + "..." if len(prompt) > 18 else prompt
@@ -479,7 +461,6 @@ if prompt:
                     message_placeholder.markdown(plny_text)
                     aktualny_chat["messages"].append({"role": "assistant", "content": plny_text})
                     uspesne = True
-                    st.rerun()
                     break
                 except Exception as e:
                     posledna_chyba = str(e)
