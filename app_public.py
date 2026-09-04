@@ -261,7 +261,7 @@ def vytvor_novy_chat():
     st.session_state.chats[nove_id] = {"title": "Polaris", "messages": []}
     st.session_state.current_chat_id = nove_id
 
-# 7. Dynamické roly s detekciou jazyka vstupu
+# 7. Dynamické roly s detekciou jazyka vstupu (všetky reťazce na jednom riadku)
 ROLY = {
     "Personal Assistant": "You are Polaris, a personal AI assistant. ALWAYS respond in the EXACT same language that the user uses to write to you (e.g., if the user writes in Slovak, respond in Slovak; if in English, respond in English, etc.). Maintain a helpful, concise, and direct tone.",
     "Programmer": "You are Polaris, an expert programmer. ALWAYS respond in the EXACT same language used by the user. Provide concise answers with clean code blocks.",
