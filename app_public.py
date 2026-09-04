@@ -37,14 +37,14 @@ jazyk_ui = ziskaj_jazyk_pouzivatela()
 # Slovník lokalizácie rozhrania
 TEXTY = {
     "sk": {
-        "title": "✨ Polaris",
+        "title": '<span class="rgb-star">★</span> Polaris <span class="rgb-star">★</span>',
         "subtitle": "Autor: Tomáš Grňo",
         "new_chat": "➕ Nový",
         "clear_all": "🧹 Všetko",
         "history": "💬 História chatov",
         "settings": "⚙️ Nastavenia",
         "placeholder": "Ako ti môžem pomôcť?",
-        "hero_title": "Ahoj, ja som Polaris ✨",
+        "hero_title": 'Ahoj, ja som Polaris <span class="rgb-star">★</span>',
         "hero_sub": "S čím chceš dnes začať?",
         "card1_title": "💡 Navrhni nápad na projekt",
         "card1_sub": "Aplikácia alebo biznis nápad",
@@ -56,33 +56,33 @@ TEXTY = {
         "thinking": "Polaris premýšľa..."
     },
     "cs": {
-        "title": "✨ Polaris",
+        "title": '<span class="rgb-star">★</span> Polaris <span class="rgb-star">★</span>',
         "subtitle": "Autor: Tomáš Grňo",
         "new_chat": "➕ Nový",
         "clear_all": "🧹 Vše",
         "history": "💬 Historie chatů",
         "settings": "⚙️ Nastavení",
         "placeholder": "Jak vám mohu pomoci?",
-        "hero_title": "Ahoj, já jsem Polaris ✨",
+        "hero_title": 'Ahoj, já jsem Polaris <span class="rgb-star">★</span>',
         "hero_sub": "Čím dnes začneme?",
         "card1_title": "💡 Navrhni nápad na projekt",
         "card1_sub": "Aplikace nebo podnikatelský nápad",
         "card1_prompt": "Navrhni mi 3 kreativní nápady na softwarový projekt.",
-        "card2_title": "📝 Napiš e-mail / zprávu",
+        "card2_title": "📝 Napiš e-mail / zpráva",
         "card2_sub": "Profesionální komunikace",
         "card2_prompt": "Pomoz mi napsat profesionální e-mail s poděkováním.",
         "role_label": "Role Polaris:",
         "thinking": "Polaris přemýšlí..."
     },
     "de": {
-        "title": "✨ Polaris",
+        "title": '<span class="rgb-star">★</span> Polaris <span class="rgb-star">★</span>',
         "subtitle": "Autor: Tomáš Grňo",
         "new_chat": "➕ Neu",
         "clear_all": "🧹 Alles löschen",
         "history": "💬 Chat-Verlauf",
         "settings": "⚙️ Einstellungen",
         "placeholder": "Wie kann ich dir helfen?",
-        "hero_title": "Hallo, ich bin Polaris ✨",
+        "hero_title": 'Hallo, ich bin Polaris <span class="rgb-star">★</span>',
         "hero_sub": "Womit möchtest du heute beginnen?",
         "card1_title": "💡 Schlage eine Projektidee vor",
         "card1_sub": "App- oder Geschäftsidee",
@@ -94,14 +94,14 @@ TEXTY = {
         "thinking": "Polaris denkt nach..."
     },
     "en": {
-        "title": "✨ Polaris",
+        "title": '<span class="rgb-star">★</span> Polaris <span class="rgb-star">★</span>',
         "subtitle": "Created by: Tomáš Grňo",
         "new_chat": "➕ New",
         "clear_all": "🧹 Clear all",
         "history": "💬 Chat History",
         "settings": "⚙️ Settings",
         "placeholder": "How can I help you?",
-        "hero_title": "Hello, I am Polaris ✨",
+        "hero_title": 'Hello, I am Polaris <span class="rgb-star">★</span>',
         "hero_sub": "What would you like to start with today?",
         "card1_title": "💡 Suggest a project idea",
         "card1_sub": "App or business idea",
@@ -116,9 +116,25 @@ TEXTY = {
 
 t = TEXTY.get(jazyk_ui, TEXTY["en"])
 
-# 3. CSS Štýlovanie
+# 3. CSS Štýlovanie + RGB Efekt na hviezdy
 st.markdown("""
     <style>
+    /* RGB Animácia pre hviezdy */
+    @keyframes rgbGlow {
+        0% { color: #ff0055; text-shadow: 0 0 8px #ff0055; }
+        20% { color: #00e5ff; text-shadow: 0 0 8px #00e5ff; }
+        40% { color: #00ff66; text-shadow: 0 0 8px #00ff66; }
+        60% { color: #ffcc00; text-shadow: 0 0 8px #ffcc00; }
+        80% { color: #b026ff; text-shadow: 0 0 8px #b026ff; }
+        100% { color: #ff0055; text-shadow: 0 0 8px #ff0055; }
+    }
+
+    .rgb-star {
+        display: inline-block;
+        animation: rgbGlow 3s infinite linear;
+        font-weight: bold;
+    }
+
     .stApp {
         background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
         background-attachment: fixed;
@@ -221,10 +237,14 @@ else:
     st.error("Chýba GOOGLE_API_KEY v Secrets!")
     st.stop()
 
-# 5. Priamy výber najrýchlejších Flash modelov (bez pomalých API testov)
+# 5. Rýchly výber primárnych modelov (v poradí rýchlosti a kapacity)
 @st.cache_data(ttl=86400)
 def ziskaj_dostupne_modely():
-    return ["gemini-1.5-flash", "gemini-3.6-flash"]
+    return [
+        "gemini-1.5-flash",
+        "gemini-2.0-flash",
+        "gemini-1.5-pro"
+    ]
 
 # 6. Správa session state
 if "chats" not in st.session_state:
@@ -253,7 +273,7 @@ ROLY = {
 
 # 8. Bočný panel
 with st.sidebar:
-    st.title(t["title"])
+    st.markdown(f"## {t['title']}", unsafe_allow_html=True)
     
     col_new, col_clear = st.columns([0.7, 0.3])
     with col_new:
@@ -307,7 +327,7 @@ with st.sidebar:
 # 9. Hlavné okno chatu
 aktualny_chat = st.session_state.chats[st.session_state.current_chat_id]
 
-st.title(t["title"])
+st.markdown(f"# {t['title']}", unsafe_allow_html=True)
 st.caption(f"{t['subtitle']} | Mode: {st.session_state.aktivny_rezim}")
 
 if len(aktualny_chat["messages"]) == 0:
@@ -360,7 +380,7 @@ with col_input:
 
 prompt = prompt_input or st.session_state.pop("pouzity_prompt", None)
 
-# 11. Generovanie odpovede bez st.rerun()
+# 11. Generovanie odpovede
 if prompt:
     if len(aktualny_chat["messages"]) == 0:
         aktualny_chat["title"] = prompt[:18] + "..." if len(prompt) > 18 else prompt
