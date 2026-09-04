@@ -205,7 +205,7 @@ def ziskaj_dostupne_modely():
             zoradene = flash_lite_modely + flash_modely + ostatne
             return zoradene
             
-        return ["models/gemini-1.5-flash"]
+        return ["models/gemini-2.0-flash"]
     except Exception:
         return ["models/gemini-1.5-flash"]
 
