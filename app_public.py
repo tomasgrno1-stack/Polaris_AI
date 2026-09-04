@@ -163,9 +163,16 @@ ROLY = {
 with st.sidebar:
     st.title("✨ Polaris")
     
-    if st.button("➕ Nový chat", use_container_width=True):
-        vytvor_novy_chat()
-        st.rerun()
+    col_new, col_clear = st.columns([0.7, 0.3])
+    with col_new:
+        if st.button("➕ Nový", use_container_width=True):
+            vytvor_novy_chat()
+            st.rerun()
+    with col_clear:
+        if st.button("🧹 Všetko", help="Vymazať celú históriu chatov", use_container_width=True):
+            st.session_state.chats = {}
+            vytvor_novy_chat()
+            st.rerun()
 
     st.divider()
     st.subheader("💬 História chatov")
@@ -174,12 +181,19 @@ with st.sidebar:
         is_active = (chat_id == st.session_state.current_chat_id)
         label = f"📍 {chat_data['title']}" if is_active else chat_data['title']
         
-        col1, col2 = st.columns([0.8, 0.2])
+        col1, col2, col3 = st.columns([0.65, 0.17, 0.18])
         with col1:
             if st.button(label, key=f"select_{chat_id}", use_container_width=True):
                 st.session_state.current_chat_id = chat_id
                 st.rerun()
         with col2:
+            with st.popover("✏️"):
+                novy_nazov = st.text_input("Nový názov:", value=chat_data['title'], key=f"rename_input_{chat_id}")
+                if st.button("Uložiť", key=f"save_rename_{chat_id}"):
+                    if novy_nazov.strip():
+                        st.session_state.chats[chat_id]['title'] = novy_nazov.strip()
+                        st.rerun()
+        with col3:
             if st.button("🗑", key=f"del_{chat_id}"):
                 del st.session_state.chats[chat_id]
                 if st.session_state.current_chat_id == chat_id:
@@ -199,10 +213,13 @@ aktualny_chat = st.session_state.chats[st.session_state.current_chat_id]
 st.title("✨ Polaris")
 st.caption(f"Vytvoril: Tomáš Grňo | Režim: {st.session_state.aktivny_rezim}")
 
-for msg in aktualny_chat["messages"]:
+for idx, msg in enumerate(aktualny_chat["messages"]):
     avatar = "✨" if msg["role"] == "assistant" else "👤"
     with st.chat_message(msg["role"], avatar=avatar):
         st.markdown(msg["content"])
+        if msg["role"] == "assistant":
+            with st.popover("📋 Kopírovať"):
+                st.code(msg["content"], language=None)
 
 # 8. Spodná lišta s tlačidlom "+"
 col_plus, col_input = st.columns([0.1, 0.9])
@@ -297,6 +314,7 @@ if prompt:
                     message_placeholder.markdown(plny_text)
                     aktualny_chat["messages"].append({"role": "assistant", "content": plny_text})
                     uspesne = True
+                    st.rerun()
                     break
                 except Exception as e:
                     posledna_chyba = str(e)
