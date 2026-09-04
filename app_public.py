@@ -240,7 +240,7 @@ def ziskaj_dostupne_modely():
             ostatne = [m for m in modely if "flash" not in m.lower()]
             return flash_modely + ostatne
             
-        return ["models/gemini-1.5-flash"]
+        return ["models/gemini-2.0-flash"]
     except Exception:
         return ["models/gemini-1.5-flash"]
 
