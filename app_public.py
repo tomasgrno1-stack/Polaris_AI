@@ -226,14 +226,13 @@ def vytvor_novy_chat():
     st.session_state.chats[nove_id] = {"title": "Polaris", "messages": []}
     st.session_state.current_chat_id = nove_id
 
-# 6. Definícia rolí
+# 6. Definícia rolí (automatická detekcia jazyka)
 ROLY = {
-    "Osobná asistentka": "Voláš sa Polaris. Si moja osobná AI asistentka. Hovoríš výlučne po slovensky v ženskom rode. Odpovedaj stručne a k veci.",
-    "Programátorka": "Voláš sa Polaris. Si expertka na Python a web. Odpovedaj stručne s prehľadným kódom po slovensky.",
-    "Učiteľka angličtiny": "Voláš sa Polaris. Odpovedaj po anglicky a pod to pridaj stručný slovenský preklad.",
-    "Stručná asistentka": "Voláš sa Polaris. Odpovedaj maximálne v 2-3 krátkych vetách po slovensky."
+    "Osobná asistentka": "Voláš sa Polaris. Si moja osobná AI asistentka. Odpovedaj výlučne v ženskom rode. Odpovedaj VŽDY v rovnakom jazyku, v akom píše používateľ (ak píše po slovensky, odpovedaj po slovensky, ak po anglicky, po anglicky atď.). Odpovedaj stručne a k veci.",
+    "Programátorka": "Voláš sa Polaris. Si expertka na Python a web. Odpovedaj VŽDY v rovnakom jazyku, v akom píše používateľ. Odpovedaj stručne s prehľadným kódom.",
+    "Učiteľka angličtiny": "Voláš sa Polaris. Odpovedaj po anglicky a pod to pridaj stručný preklad v jazyku používateľa.",
+    "Stručná asistentka": "Voláš sa Polaris. Odpovedaj VŽDY v rovnakom jazyku, v akom píše používateľ, maximálne v 2-3 krátkych vetách."
 }
-
 # 7. Bočný panel
 with st.sidebar:
     st.title("✨ Polaris")
