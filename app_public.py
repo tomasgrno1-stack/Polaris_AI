@@ -3,6 +3,8 @@ import google.generativeai as genai
 from PIL import Image
 import uuid
 import pypdf
+import docx
+import pandas as pd
 
 # 1. Nastavenie stránky
 st.set_page_config(
@@ -12,7 +14,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. CSS pozadie, oprava vytrčajúceho panela a štýlovanie
+# 2. CSS pozadie a štýlovanie
 st.markdown("""
     <style>
     .stApp {
@@ -38,7 +40,8 @@ st.markdown("""
         border-right: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-   [data-testid="stChatMessage"] {
+    /* Priesvitné pozadie pre správy v chate */
+    [data-testid="stChatMessage"] {
         background-color: transparent !important;
         border: none !important;
         box-shadow: none !important;
@@ -59,7 +62,7 @@ st.markdown("""
         border: none !important;
     }
 
-    /* Ukotvenie spodného panela a orezanie vytrčajúcich prvkov */
+    /* Ukotvenie spodného panela */
     div[data-testid="stHorizontalBlock"]:has(.stPopover) {
         position: fixed;
         bottom: 20px;
@@ -76,7 +79,6 @@ st.markdown("""
         overflow: hidden;
     }
 
-    /* Tlačidlo pluska v lište */
     .stPopover>button {
         border-radius: 50% !important;
         width: 42px !important;
@@ -95,13 +97,11 @@ st.markdown("""
         transition: all 0.2s ease;
     }
 
-    /* Načítavacia animácia */
     div[data-baseweb="spinner"] {
         border-top-color: #a855f7 !important;
         border-left-color: #38bdf8 !important;
     }
 
-    /* Popover menu dizajn */
     div[data-testid="stPopoverBody"] {
         background-color: #161b22 !important;
         border: 1px solid rgba(255, 255, 255, 0.15);
@@ -207,7 +207,7 @@ with st.sidebar:
     st.header("⚙️ Nastavenia")
     vybrana_rola = st.selectbox("Rola Polaris:", list(ROLY.keys()))
 
-# 7. Zobrazenie správ na ploche
+# 7. Zobrazenie správ
 aktualny_chat = st.session_state.chats[st.session_state.current_chat_id]
 
 st.title("✨ Polaris")
@@ -216,11 +216,9 @@ st.caption(f"Vytvoril: Tomáš Grňo | Režim: {st.session_state.aktivny_rezim}"
 for idx, msg in enumerate(aktualny_chat["messages"]):
     avatar = "✨" if msg["role"] == "assistant" else "👤"
     with st.chat_message(msg["role"], avatar=avatar):
-        # Náhľad priloženého obrázka
         if "image" in msg and msg["image"] is not None:
             st.image(msg["image"], use_container_width=True)
         
-        # Náhľad informácie o priloženom súbore
         if "file_info" in msg and msg["file_info"]:
             st.caption(f"📎 Priložený súbor: **{msg['file_info']}**")
             
@@ -230,14 +228,14 @@ for idx, msg in enumerate(aktualny_chat["messages"]):
             with st.popover("📋 Kopírovať"):
                 st.code(msg["content"], language=None)
 
-# 8. Spodná lišta s tlačidlom "+"
+# 8. Spodná lišta
 col_plus, col_input = st.columns([0.1, 0.9])
 
 with col_plus:
     with st.popover("➕"):
         nahraty_subor = st.file_uploader(
-            "Priložiť súbor (Obrázok, TXT, PDF):",
-            type=["png", "jpg", "jpeg", "txt", "pdf"]
+            "Priložiť súbor (Obrázok, TXT, PDF, DOCX, XLSX, CSV):",
+            type=["png", "jpg", "jpeg", "txt", "pdf", "docx", "xlsx", "xls", "csv"]
         )
 
         st.divider()
@@ -261,7 +259,6 @@ if prompt:
         aktualny_chat["title"] = prompt[:18] + "..." if len(prompt) > 18 else prompt
 
     sprava_pouzivatela = {"role": "user", "content": prompt}
-    
     obsah_spravy = [prompt]
     
     # Spracovanie nahrávaného súboru
@@ -269,17 +266,20 @@ if prompt:
         subor_typ = nahraty_subor.type
         nazov_suboru = nahraty_subor.name
         
+        # Obrázky
         if subor_typ in ["image/png", "image/jpeg", "image/jpg"]:
             img = Image.open(nahraty_subor)
             obsah_spravy.append(img)
             sprava_pouzivatela["image"] = img
             sprava_pouzivatela["file_info"] = nazov_suboru
             
+        # Textové súbory TXT
         elif subor_typ == "text/plain":
             text_suboru = nahraty_subor.read().decode("utf-8")
             obsah_spravy.append(f"\n\nText zo súboru {nazov_suboru}:\n{text_suboru}")
             sprava_pouzivatela["file_info"] = nazov_suboru
             
+        # PDF súbory
         elif subor_typ == "application/pdf":
             try:
                 pdf_reader = pypdf.PdfReader(nahraty_subor)
@@ -290,6 +290,31 @@ if prompt:
                 sprava_pouzivatela["file_info"] = nazov_suboru
             except Exception as e:
                 st.error(f"Chyba pri čítaní PDF: {e}")
+
+        # Word súbory (.docx)
+        elif nazov_suboru.endswith(".docx"):
+            try:
+                doc = docx.Document(nahraty_subor)
+                docx_text = "\n".join([p.text for p in doc.paragraphs if p.text])
+                obsah_spravy.append(f"\n\nObsah z Word dokumentu {nazov_suboru}:\n{docx_text}")
+                sprava_pouzivatela["file_info"] = nazov_suboru
+            except Exception as e:
+                st.error(f"Chyba pri čítaní Word súboru: {e}")
+
+        # Excel a CSV súbory (.xlsx, .xls, .csv)
+        elif nazov_suboru.endswith((".xlsx", ".xls", ".csv")):
+            try:
+                if nazov_suboru.endswith(".csv"):
+                    df = pd.read_csv(nahraty_subor)
+                else:
+                    df = pd.read_excel(nahraty_subor)
+                
+                # Prevedie prvé riadky tabuľky na Markdown text
+                excel_text = df.to_markdown(index=False)
+                obsah_spravy.append(f"\n\nÚdaje z tabuľky {nazov_suboru}:\n{excel_text}")
+                sprava_pouzivatela["file_info"] = nazov_suboru
+            except Exception as e:
+                st.error(f"Chyba pri čítaní tabuľky: {e}")
 
     aktualny_chat["messages"].append(sprava_pouzivatela)
     
