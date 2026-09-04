@@ -38,12 +38,11 @@ st.markdown("""
         border-right: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    [data-testid="stChatMessage"] {
-        background-color: rgba(22, 27, 34, 0.75) !important;
-        backdrop-filter: blur(8px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 12px;
-        padding: 1rem;
+   [data-testid="stChatMessage"] {
+        background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0.5rem 0;
         margin-bottom: 0.8rem;
     }
 
