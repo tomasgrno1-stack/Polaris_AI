@@ -187,29 +187,18 @@ else:
     st.error("Chýba GOOGLE_API_KEY v Secrets!")
     st.stop()
 
-# Garantované zoradenie: Gemini 2.5 Flash Lite ako primárny model
+# Garantované zoradenie: Gemini 2.0 Flash ako primárny model
 @st.cache_data(ttl=3600)
 def ziskaj_dostupne_modely():
-    # Primárne verzie s modelom 2.5 Flash Lite na 1. mieste
     priority_list = [
-        "models/gemini-2.5-flash-lite",
-        "gemini-2.5-flash-lite",
-        "models/gemini-1.5-flash-lite",
-        "models/gemini-1.5-flash"
+        "gemini-2.0-flash",
+        "gemini-2.0-flash-lite",
+        "gemini-1.5-flash",
+        "gemini-1.5-pro"
     ]
-    
     try:
-        dostupne = []
-        for m in genai.list_models():
-            if 'generateContent' in m.supported_generation_methods:
-                dostupne.append(m.name)
-        
-        # Filtrovanie pre zaistenie poradia s fallbackom
+        dostupne = [m.name.replace("models/", "") for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
         vysledok = [m for m in priority_list if m in dostupne]
-        for m in dostupne:
-            if m not in vysledok:
-                vysledok.append(m)
-                
         return vysledok if vysledok else priority_list
     except Exception:
         return priority_list
