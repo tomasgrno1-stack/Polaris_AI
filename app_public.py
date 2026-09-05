@@ -241,7 +241,7 @@ else:
 @st.cache_data(ttl=86400)
 def ziskaj_dostupne_modely():
     return [
-        "gemini-2.0-flash",        # Ultra-rýchla moderná záloha
+        "gemini-1.5-flash",        # Ultra-rýchla moderná záloha
         "gemini-3.6-flash"         # Štandardná záloha
     ]
 
