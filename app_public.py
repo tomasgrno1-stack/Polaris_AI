@@ -237,12 +237,12 @@ else:
     st.error("Chýba GOOGLE_API_KEY v Secrets!")
     st.stop()
 
-# 5. Rýchly výber primárnych modelov (v poradí rýchlosti a kapacity)
+# 5. Výber najpokročilejších modelov pre hlbokú inteligenciu
 @st.cache_data(ttl=86400)
 def ziskaj_dostupne_modely():
     return [
-        "gemini-1.5-flash",
-        "gemini-3.6-flash",
+        "gemini-2.0-flash",        # Ultra-rýchla moderná záloha
+        "gemini-3.6-flash"         # Štandardná záloha
     ]
 
 # 6. Správa session state
@@ -262,11 +262,18 @@ def vytvor_novy_chat():
     st.session_state.chats[nove_id] = {"title": "Polaris", "messages": []}
     st.session_state.current_chat_id = nove_id
 
-# 7. Dynamické roly s detekciou jazyka
+# 7. Pokročilé roly pre analytické uvažovanie
 ROLY = {
-    "Personal Assistant": "You are Polaris, a personal AI assistant. ALWAYS respond in the EXACT same language that the user uses to write to you (e.g., if the user writes in Slovak, respond in Slovak; if in English, respond in English, etc.). Maintain a helpful, concise, and direct tone.",
-    "Programmer": "You are Polaris, an expert programmer. ALWAYS respond in the EXACT same language used by the user. Provide concise answers with clean code blocks.",
+    "Personal Assistant": """You are Polaris, a highly intelligent, expert AI assistant. 
+ALWAYS respond in the EXACT same language that the user uses to write to you (e.g., if the user writes in Slovak, respond in Slovak; if in English, respond in English, etc.). 
+Analyze requests deeply, think step-by-step when solving complex problems, and provide thorough, logically structured, and extremely helpful answers.""",
+    
+    "Programmer": """You are Polaris, an elite senior software engineer and system architect. 
+ALWAYS respond in the EXACT same language used by the user. 
+Provide clean, efficient, production-ready code with concise explanations and structural best practices.""",
+    
     "English Teacher": "You are Polaris. Respond in English and provide a brief translation in the language used by the user below.",
+    
     "Concise Assistant": "You are Polaris. ALWAYS respond in the EXACT same language used by the user, limiting responses to a maximum of 2-3 short sentences."
 }
 
@@ -442,14 +449,16 @@ if prompt:
         message_placeholder = st.empty()
 
         with st.spinner(t["thinking"]):
+            # Optimalizácia parametrov pre hlboké uvažovanie bez umelých obmedzení
             generation_config = genai.types.GenerationConfig(
-                temperature=0.5,
-                top_p=0.8,
-                top_k=20,
-                max_output_tokens=1000
+                temperature=0.7,
+                top_p=0.95,
+                top_k=40,
+                max_output_tokens=8192
             )
 
-            pouzita_historia = aktualny_chat["messages"][:-1][-4:]
+            # Rozšírený kontext (posledných 10 správ namiesto 4)
+            pouzita_historia = aktualny_chat["messages"][:-1][-10:]
             
             gemini_history = []
             for m in pouzita_historia:
